@@ -1,5 +1,6 @@
 module BlockDecomposition
 
-greet() = print("Hello World!")
+include("axis.jl")
+include("decompositiontree.jl")
 
 end # module
