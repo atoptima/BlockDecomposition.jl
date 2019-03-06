@@ -92,7 +92,7 @@ end
 
 annotation(n::AbstractDecompositionNode) = n.problem
 
-function DecompositionRoot(t::DecompositionTree, a::DecompositionAxis{T, V}, init_dec::Decomposition) where {T, V <: AbstractArray{T}}
+function DecompositionRoot(t::DecompositionTree, a::Axis{T, V}, init_dec::Decomposition) where {T, V <: AbstractArray{T}}
   problem = OriginalAnnotation()
   master = MasterAnnotation(t, init_dec)
   empty_dict = Dict{T, AbstractDecompositionNode}()
@@ -122,7 +122,7 @@ function register_dantzig_wolfe_decomposition!(t::DecompositionTree,
 end
 
 function register_dantzig_wolfe_decomposition!(tree::DecompositionTree, 
-    root::DecompositionRoot, axis::BlockDecomposition.DecompositionAxis)
+    root::DecompositionRoot, axis::BlockDecomposition.Axis)
   for id in axis
     annotation = Annotation(tree, Pricing(), DantzigWolfe(), id)
     get!(root.subproblems, id, DecompositionLeaf(tree, root, annotation, 1))
