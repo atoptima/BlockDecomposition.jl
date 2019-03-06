@@ -35,7 +35,7 @@ end
 
 function _axis_(name, id, container, i::Bool)
   sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
-  return :(Coluna.DecompositionAxis($sym_name, $id, $container, $i))
+  return :(BlockDecomposition.DecompositionAxis($sym_name, $id, $container, $i))
 end
 _axis_(name, container, i::Bool) = _axis_(name, :(tuple()), container, i)
 
@@ -60,7 +60,7 @@ end
 
 function _build_axis_array_(definition, container, identical)
   nb_loops = length(definition.args) - 1
-  start =:(local axes_dict = Dict{NTuple{$nb_loops, Any}, Coluna.DecompositionAxis{eltype($container)}}())
+  start =:(local axes_dict = Dict{NTuple{$nb_loops, Any}, BlockDecomposition.DecompositionAxis{eltype($container)}}())
   name = definition.args[1]
   indices = _axis_array_indices_(definition.args[2:end])
   exp_loop = :(get!(axes_dict, $indices, $(_axis_(name, indices, container, identical))))

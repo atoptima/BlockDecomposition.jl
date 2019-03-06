@@ -118,11 +118,11 @@ _get_node_(m::JuMP.Model) = _get_tree_(m).root
 # The decomposition should be done on a leaf of the decomposition tree
 function register_dantzig_wolfe_decomposition!(t::DecompositionTree, 
     l::DecompositionLeaf)
-  error("Coluna does not support nested decomposition yet.")
+  error("BlockDecomposition does not support nested decomposition yet.")
 end
 
 function register_dantzig_wolfe_decomposition!(tree::DecompositionTree, 
-    root::DecompositionRoot, axis::Coluna.DecompositionAxis)
+    root::DecompositionRoot, axis::BlockDecomposition.DecompositionAxis)
   for id in axis
     annotation = Annotation(tree, Pricing(), DantzigWolfe(), id)
     get!(root.subproblems, id, DecompositionLeaf(tree, root, annotation, 1))
@@ -132,19 +132,19 @@ end
 
 function register_benders_decomposition!(t::DecompositionTree, 
     l::DecompositionLeaf)
-  error("Coluna does not support Benders decomposition yet.")
+  error("BlockDecomposition does not support Benders decomposition yet.")
 end
 
 function register_benders_decomposition!(t::DecompositionTree,
     r::DecompositionRoot)
-  error("Coluna does not support Benders decomposition yet.")
+  error("BlockDecomposition does not support Benders decomposition yet.")
 end
 
 macro dantzig_wolfe_decomposition(args...)
   dec_root, name, axis = args
   exp = quote 
-    Coluna._set_decomposition_tree_!($dec_root, $axis, Coluna.DantzigWolfe())
-    $name = Coluna.register_dantzig_wolfe_decomposition!(Coluna._get_tree_($dec_root), Coluna._get_node_($dec_root), $axis)
+    BlockDecomposition._set_decomposition_tree_!($dec_root, $axis, BlockDecomposition.DantzigWolfe())
+    $name = BlockDecomposition.register_dantzig_wolfe_decomposition!(BlockDecomposition._get_tree_($dec_root), BlockDecomposition._get_node_($dec_root), $axis)
   end
   return esc(exp)
 end
