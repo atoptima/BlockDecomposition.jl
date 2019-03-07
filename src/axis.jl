@@ -28,7 +28,7 @@ macro axis(args...)
     identical = _axis_identical_(args)
     exp = :()
     if typeof(definition) != Symbol
-        exp = generate_axis_array(definition, container, identical)
+        exp = generate_axis_dense_array(definition, container, identical)
     else
         name = definition
         exp = :($name = $(generate_axis(name, container, identical)))
@@ -56,32 +56,26 @@ function _axis_identical_(args)
     return false
 end
 
-function _axis_array_indices_(loops)
-    indices = "tuple(" * string(loops[1].args[2])
-    for loop in loops[2:end]
-        indices *=  ", " * string(loop.args[2])
-    end
-    return Meta.parse(indices * ")")
+function _axis_array_indices_(indexsets)
+    return [indexset.args[2] for indexset in indexsets]
 end
 
-function generate_axis_array(definition, container, identical)
-    nb_loops = length(definition.args) - 1
-    start = :(local axes_dict = Dict{NTuple{$nb_loops, Any}, BlockDecomposition.Axis}())
-    name = definition.args[1]
-    indices = _axis_array_indices_(definition.args[2:end])
-    exp_loop = :(get!(axes_dict, $indices, $(generate_axis(name, indices, container, identical))))
-    for loop in reverse(definition.args[2:end])
-        (loop.args[1] != :in) && error("Should be a loop.")
-        exp_loop = quote 
-            for $(loop.args[2]) = $(loop.args[3])
-                $exp_loop
-            end 
-        end
-    end
-    exp = quote 
-        $start
-        $exp_loop
-        $name = JuMP.Containers.SparseAxisArray(axes_dict)
-    end
-    return exp
+function _axis_array_sets_(indexsets)
+    return [indexset.args[3] for indexset in indexsets]
 end
+
+# Returns a JuMP.Container.DenseAxisArray{Axis}
+# see https://github.com/JuliaOpt/JuMP.jl/blob/master/src/Containers/DenseAxisArray.jl
+function generate_axis_dense_array(definition, container, identical)
+    name = definition.args[1]
+    indexsets = definition.args[2:end]
+    nbindexsets = length(indexsets)
+    indices = _axis_array_indices_(indexsets)
+    sets = _axis_array_sets_(indexsets)
+    decomposition_axis = generate_axis(name, Expr(:tuple, indices...), container, identical)
+    generator = Expr(:generator, decomposition_axis, [Expr(:(=), indices[i], sets[i]) for i in 1:nbindexsets]...)
+    array = Expr(:comprehension, generator)
+    axisarray = Expr(:call, JuMP.Containers.DenseAxisArray, array, sets...)
+    return :($name = $axisarray)
+end
+

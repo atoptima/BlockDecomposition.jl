@@ -1,65 +1,64 @@
-using JuMP
-const BD = BlockDecomposition
+function axis_declarations()
+    BD.@axis(A, 3:5)
+    BD.@axis(B, 3:5, Identical)
+    BD.@axis(C[a in A], 1:6)
+    BD.@axis(D[i in 1:3], 1:A[i])
+    BD.@axis(E[a in A], 1:a)
+    BD.@axis(F[i in 1:5, j in 1:2], 1:i*j, Identical)
+    #BD.@axis(G[i in 1:2, j in 3:5, k in D[i]], 1:i+j+k)
+    BD.@axis(H, ["lorem", "ipsum", "dolor"])
 
-BD.@axis(A, 3:5)
-BD.@axis(B, 3:5, Identical)
-BD.@axis(C[a in A], 1:6)
-BD.@axis(D[i in 1:3], 1:A[i])
-BD.@axis(E[a in A], 1:a)
-BD.@axis(F[i in 1:5, j in 1:2], 1:i*j, Identical)
-BD.@axis(G[i in 1:2, j in 3:5, k in D[i]], 1:i+j+k)
-BD.@axis(H, ["lorem", "ipsum", "dolor"])
-
-@testset "Axis Declaration A" begin
-    @test length(A) == 3
-    for (i, a) in enumerate(A)
-        @test a == i + 2
+    @testset "Axis Declaration A" begin
+        @test length(A) == 3
+        for (i, a) in enumerate(A)
+            @test a == i + 2
+        end
+        @test BD.identical(A) == false
     end
-    @test BD.identical(A) == false
-end
 
-@testset "Axis Declaration B" begin
-    @test B[end] == 5
-    @test BD.identical(B) == true
-end
+    @testset "Axis Declaration B" begin
+        @test B[end] == 5
+        @test BD.identical(B) == true
+    end
 
-@testset "Axis Declaration C" begin
-    for a in A
-        @test length(C[a]) == 6
-        for i in 1:6
-            @test C[a][i] == i
-            @test BD.identical(C[a]) == false
+    @testset "Axis Declaration C" begin
+        for a in A
+            @test length(C[a]) == 6
+            for i in 1:6
+                @test C[a][i] == i
+                @test BD.identical(C[a]) == false
+            end
         end
     end
-end
 
-@testset "Axis Declaration D" begin
-    for i in 1:3
-        @test D[i][end] == A[i]
+    @testset "Axis Declaration D" begin
+        for i in 1:3
+            @test D[i][end] == A[i]
+        end
     end
-end
 
-@testset "Axis Declaration E" begin
-    for a in A
-        @test E[a][end] == a
+    @testset "Axis Declaration E" begin
+        for a in A
+            @test E[a][end] == a
+        end
     end
-end
 
-@testset "Axis Declaration F" begin
-    for i in 1:5, j in 1:2
-        @test F[i, j][end] == i * j
-        @test BD.identical(F[i, j]) == true
+    @testset "Axis Declaration F" begin
+        for i in 1:5, j in 1:2
+            @test F[i, j][end] == i * j
+            @test BD.identical(F[i, j]) == true
+        end
     end
-end
 
-@testset "Axis Declaration G" begin
-    for i in 1:2, j in 3:5, k in D[i]
-        @test G[i, j, k][end] == i + j + k
+    # @testset "Axis Declaration G" begin
+    #     for i in 1:2, j in 3:5, k in D[i]
+    #         @test G[i, j, k][end] == i + j + k
+    #     end
+    # end
+
+    @testset "Axis Declaration H" begin
+        @test H[1] == "lorem"
+        @test H[2] == "ipsum"
+        @test H[3] == "dolor"
     end
-end
-
-@testset "Axis Declaration H" begin
-    @test H[1] == "lorem"
-    @test H[2] == "ipsum"
-    @test H[3] == "dolor"
 end
