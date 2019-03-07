@@ -1,6 +1,8 @@
 # When you call a decomposition macro, it returns a pointer to the Decomposition
 # node from where the decomposition has been performed.
 # A decomposition node should contains : the master & a vector of subproblems
+const AxisContainer = Union{Axis, JuMP.Containers.DenseAxisArray{<: Axis}}
+
 abstract type AbstractNode end
 
 mutable struct Tree
@@ -8,7 +10,7 @@ mutable struct Tree
     nb_masters::Int
     nb_subproblems::Int
     current_uid::Int
-    function Tree(D::Type{<: Decomposition}, axis::Axis)
+    function Tree(D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
         t = new()
         t.nb_masters = 0
         t.nb_subproblems = 0
@@ -29,42 +31,47 @@ struct Leaf <: AbstractNode
     parent::AbstractNode
     problem::Annotation
     depth::Int
+    # Edge id from parent
+    edge_id::Any
 end
 
-struct Node <: AbstractNode
+struct Node{A} <: AbstractNode where {A <: AxisContainer}
     tree::Tree
     parent::AbstractNode
     depth::Int
     problem::Annotation
+    # Edge id from parent
+    edge_id::Any
     # Information about the decomposition
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
-    axis::Axis
+    axis::A
 end
 
-struct Root <: AbstractNode
+struct Root{A} <: AbstractNode where {A <: AxisContainer}
     tree::Tree
+    depth::Int
     # Current Node
     problem::Annotation
     # Children (decomposition performed on this node)
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
-    axis::Axis
+    axis::A
 end
 
 annotation(n::AbstractNode) = n.problem
 
-function Root(t::Tree, D::Type{<: Decomposition}, axis::Axis)
+function Root(t::Tree, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     uid = generateannotationid(t)
     problem = OriginalAnnotation()
     master = MasterAnnotation(uid, D)
     empty_dict = Dict{Any, AbstractNode}()
-    return Root(t, problem, master, empty_dict, axis)
+    return Root(t, 0, problem, master, empty_dict, axis)
 end
 
 hasTree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
-function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
+function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     if !hasTree(model)
         model.ext[:decomposition_tree] = Tree(D, axis)
     else
@@ -72,16 +79,55 @@ function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, a
     end
     return
 end
-set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis) = return
+set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer} = return
 get_tree(n::AbstractNode) = n.tree
 get_tree(m::JuMP.Model) = m.ext[:decomposition_tree]
+get_depth(n::AbstractNode) = n.depth
 
-function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
+function get_nodes(tree::Tree)
+    vec_nodes = Vector{AbstractNode}()
+    queue = Queue{AbstractNode}()
+    enqueue!(queue, tree.root)
+    while length(queue) > 0
+        node = dequeue!(queue)
+        for (key, child) in node.subproblems
+            if typeof(child) <: Leaf
+                push!(vec_nodes, child)
+            else
+                enqueue!(queue, child)
+            end
+        end
+        push!(vec_nodes, node)
+    end
+    return vec_nodes
+end
+
+function value_of_axes(n::AbstractNode)
+    axes_names_values = Vector()
+    current_node = n
+    while !(typeof(current_node) <: Root)
+        # some modification to do for decomposition with 2 indices
+        push!(axes_names_values, (current_node.parent.axis.name, current_node.edge_id))
+        current_node = current_node.parent
+    end
+    return axes_names_values
+end
+
+function create_leaf!(n::AbstractNode, id, a::Annotation)
+    edge_val = id
+    if identical(n.axis)
+        edge_val = n.axis.container
+    end
+    leaf = Leaf(get_tree(n), n, a, get_depth(n) + 1, edge_val)
+    get!(n.subproblems, id, leaf)
+end
+
+function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     set_decomposition_tree!(m, D, axis)
     return get_tree(m).root
 end
 
-function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
+function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     error("BlockDecomposition does not support nested decomposition yet.") 
     return
 end
@@ -90,8 +136,7 @@ function register_subproblem!(n::AbstractNode, id, P::Type{<: Subproblem}, D::Ty
     tree = get_tree(n)
     uid = generateannotationid(tree)
     annotation = Annotation(uid, P, D, id, min_mult, max_mult)
-    leaf = Leaf(tree, n, annotation, 1)
-    get!(n.subproblems, id, leaf)
+    create_leaf!(n, id, annotation)
 end
 
 

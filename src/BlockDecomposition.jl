@@ -1,6 +1,6 @@
 module BlockDecomposition
 
-using JuMP
+using JuMP, DataStructures
 
 export BlockModel
 
@@ -12,7 +12,7 @@ include("decomposition.jl")
 function BlockModel(args...)
     m = JuMP.Model(args...)
     JuMP.set_optimize_hook(m, register_decomposition)
-    
+
     return m
 end
 

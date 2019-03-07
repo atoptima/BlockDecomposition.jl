@@ -91,7 +91,7 @@ function cutting_stock_different_sizes(d::CsData)
 
     @objective(model, Min, sum(y[t, s] for t in d.sheet_types, s in Sheets[t]))
 
-    BD.@dantzig_wolfe_decomposition(model, dwd, Sheets)
+    #BD.@dantzig_wolfe_decomposition(model, dwd, Sheets)
 
     #dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
     #for t in SheetTypes
