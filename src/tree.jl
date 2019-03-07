@@ -8,12 +8,12 @@ mutable struct Tree
     nb_masters::Int
     nb_subproblems::Int
     current_uid::Int
-    function Tree(D::Type{<: Decomposition})
+    function Tree(D::Type{<: Decomposition}, axis::Axis)
         t = new()
         t.nb_masters = 0
         t.nb_subproblems = 0
         t.current_uid = 0
-        r = Root(t, D)
+        r = Root(t, D, axis)
         t.root = r
         return t
     end
@@ -34,12 +34,12 @@ end
 struct Node <: AbstractNode
     tree::Tree
     parent::AbstractNode
-    problem::Annotation
     depth::Int
-    # Children (decomposition performed on this node)
+    problem::Annotation
+    # Information about the decomposition
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
-    identical_subproblems::Bool
+    axis::Axis
 end
 
 struct Root <: AbstractNode
@@ -49,44 +49,44 @@ struct Root <: AbstractNode
     # Children (decomposition performed on this node)
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
+    axis::Axis
 end
 
 annotation(n::AbstractNode) = n.problem
 
-function Root(t::Tree, D::Type{<: Decomposition})
+function Root(t::Tree, D::Type{<: Decomposition}, axis::Axis)
     uid = generateannotationid(t)
     problem = OriginalAnnotation()
     master = MasterAnnotation(uid, D)
     empty_dict = Dict{Any, AbstractNode}()
-    return Root(t, problem, master, empty_dict)
+    return Root(t, problem, master, empty_dict, axis)
 end
 
 hasTree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
-function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition})
+function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
     if !hasTree(model)
-        model.ext[:decomposition_tree] = Tree(D)
+        model.ext[:decomposition_tree] = Tree(D, axis)
     else
         error("Cannot decompose twice at the same level.")
     end
     return
 end
-set_decomposition_tree!(n::AbstractNode) = return
+set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis) = return
 get_tree(n::AbstractNode) = n.tree
 get_tree(m::JuMP.Model) = m.ext[:decomposition_tree]
 
-function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition})
-    set_decomposition_tree!(m, D)
+function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
+    set_decomposition_tree!(m, D, axis)
     return get_tree(m).root
 end
 
-function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition})
-    # Do the promotion 
+function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
+    error("BlockDecomposition does not support nested decomposition yet.") 
     return
 end
 
 function register_subproblem!(n::AbstractNode, id, P::Type{<: Subproblem}, D::Type{<: Decomposition}, min_mult::Int, max_mult::Int)
-    # Register the subproblem
     tree = get_tree(n)
     uid = generateannotationid(tree)
     annotation = Annotation(uid, P, D, id, min_mult, max_mult)
@@ -117,7 +117,7 @@ function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, 
     else
         for a in axis
             register_subproblem!(n, (multi_index..., a), P, D, 1, 1)
-   i     end
+        end
     end
 end
 
@@ -127,7 +127,7 @@ macro dantzig_wolfe_decomposition(args...)
     end
     node, name, axis = args
     dw_exp = quote 
-        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe)
+        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)
         BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.Pricing, BlockDecomposition.DantzigWolfe)
     end
     return esc(dw_exp)
