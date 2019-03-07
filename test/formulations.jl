@@ -16,7 +16,7 @@ end
 function generalized_assignement(d::GapData)
     BD.@axis(Machines, d.machines)
 
-    model = Model()
+    model = BlockModel()
     @variable(model, x[j in d.jobs, m in Machines], Bin)
 
     @constraint(model, cov[j in d.jobs], sum(x[j, m] for m in Machines) >= 1)
@@ -57,7 +57,7 @@ function cutting_stock(d::CsData)
 
     BD.@axis(Sheets, 1:7, Identical)
 
-    model = Model()
+    model = BlockModel()
     @variable(model, 0 <= x[i in d.items, s in Sheets] <= d.demands[i], Int)
     @variable(model, y[s in Sheets], Bin)
 
@@ -79,7 +79,7 @@ function cutting_stock_different_sizes(d::CsData)
     @assert length(d.sheet_types) > 1
     BD.@axis(Sheets[t in d.sheet_types], 1:d.nb_sheets[t], Identical)
 
-    model = Model()
+    model = BlockModel()
     @variable(model, 0 <= x[t in d.sheet_types, s in Sheets[t], i in d.items] <= d.demands[i], Int)
     @variable(model, y[t in d.sheet_types, s in Sheets[t]], Bin)
 
