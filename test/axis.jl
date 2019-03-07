@@ -5,8 +5,7 @@ function axis_declarations()
     BD.@axis(D[i in 1:3], 1:A[i])
     BD.@axis(E[a in A], 1:a)
     BD.@axis(F[i in 1:5, j in 1:2], 1:i*j, Identical)
-    #BD.@axis(G[i in 1:2, j in 3:5, k in D[i]], 1:i+j+k)
-    BD.@axis(H, ["lorem", "ipsum", "dolor"])
+    BD.@axis(G, ["lorem", "ipsum", "dolor"])
 
     @testset "Axis Declaration A" begin
         @test length(A) == 3
@@ -50,15 +49,9 @@ function axis_declarations()
         end
     end
 
-    # @testset "Axis Declaration G" begin
-    #     for i in 1:2, j in 3:5, k in D[i]
-    #         @test G[i, j, k][end] == i + j + k
-    #     end
-    # end
-
-    @testset "Axis Declaration H" begin
-        @test H[1] == "lorem"
-        @test H[2] == "ipsum"
-        @test H[3] == "dolor"
+    @testset "Axis Declaration G" begin
+        @test G[1] == "lorem"
+        @test G[2] == "ipsum"
+        @test G[3] == "dolor"
     end
 end

@@ -78,4 +78,3 @@ function generate_axis_dense_array(definition, container, identical)
     axisarray = Expr(:call, JuMP.Containers.DenseAxisArray, array, sets...)
     return :($name = $axisarray)
 end
-

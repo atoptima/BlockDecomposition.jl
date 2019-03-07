@@ -3,6 +3,7 @@ module BlockDecomposition
 using JuMP
 
 include("axis.jl")
-include("decompositiontree.jl")
+include("annotations.jl")
+include("tree.jl")
 
 end # module
