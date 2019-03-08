@@ -59,7 +59,9 @@ struct Root{A} <: AbstractNode where {A <: AxisContainer}
     axis::A
 end
 
-annotation(n::AbstractNode) = n.problem
+annotation(n::Leaf) = n.problem
+annotation(n::Root) = n.master # TODO : check if true in nested decomposition
+annotation(n::Node) = n.master # TODO : check if true in nested decomposition
 
 function Root(t::Tree, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     uid = generateannotationid(t)
@@ -103,11 +105,11 @@ function get_nodes(tree::Tree)
 end
 
 function value_of_axes(n::AbstractNode)
-    axes_names_values = Vector()
+    axes_names_values = Dict{Symbol, Any}()
     current_node = n
     while !(typeof(current_node) <: Root)
         # some modification to do for decomposition with 2 indices
-        push!(axes_names_values, (current_node.parent.axis.name, current_node.edge_id))
+        axes_names_values[current_node.parent.axis.name] = current_node.edge_id
         current_node = current_node.parent
     end
     return axes_names_values
@@ -138,7 +140,6 @@ function register_subproblem!(n::AbstractNode, id, P::Type{<: Subproblem}, D::Ty
     annotation = Annotation(uid, P, D, id, min_mult, max_mult)
     create_leaf!(n, id, annotation)
 end
-
 
 function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<: Subproblem}, D::Type{<: Decomposition})
     if identical(axis)
