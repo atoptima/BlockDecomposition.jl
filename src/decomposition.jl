@@ -56,14 +56,36 @@ function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
     return tuple
 end
 
+struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
+
+set_annotation(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
+set_annotation(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
+
+function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, ci::MOI.ConstraintIndex, annotation::Annotation)
+    if !haskey(dest.conattr, attribute)
+        dest.conattr[attribute] = Dict{MOI.ConstraintIndex, Tuple}()
+    end
+    dest.conattr[attribute][ci] = moi_format(annotation)
+    return
+end
+
+struct VariableDecomposition <: MOI.AbstractVariableAttribute end
+
+function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition, vi::MOI.VariableIndex, annotation::Annotation)
+    if !haskey(dest.varattr, attribute)
+        dest.varattr[attribute] = Dict{MOI.ConstraintIndex, Tuple}()
+    end
+    dest.varattr[attribute][vi] = moi_format(annotation)
+    return
+end
+
 function set_annotations!(model::JuMP.Model, obj_ref, indices::Tuple, annotation::Annotation)
     if applicable(iterate, obj_ref[indices...])
         for obj in obj_ref[indices...]
-            println("$obj goes in $annotation")
-             # example of annotation : MOI.set(model, Coluna.ConstraintDantzigWolfeAnnotation(), constr_ref, block)
+            set_annotation(model, obj, annotation)
         end
     else
         obj = obj_ref[indices...]
-        println("$obj goes in $annotation")
+        set_annotation(model, obj, annotation)
     end
 end

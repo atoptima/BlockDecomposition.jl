@@ -1,6 +1,10 @@
 module BlockDecomposition
 
-using JuMP, DataStructures
+using JuMP, DataStructures, MathOptInterface
+import MathOptInterface
+import MathOptInterface.Utilities
+
+const MOI = MathOptInterface
 
 export BlockModel
 
