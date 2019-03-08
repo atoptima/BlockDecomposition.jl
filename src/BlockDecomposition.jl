@@ -14,8 +14,8 @@ include("annotations.jl")
 include("tree.jl")
 include("decomposition.jl")
 
-function BlockModel(args...)
-    m = JuMP.Model(args...)
+function BlockModel(args...; kw...)
+    m = JuMP.Model(args...; kw...)
     JuMP.set_optimize_hook(m, register_decomposition)
 
     return m
