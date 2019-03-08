@@ -5,6 +5,7 @@ import MathOptInterface
 import MathOptInterface.Utilities
 
 const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 
 export BlockModel
 
