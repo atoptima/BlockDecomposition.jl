@@ -1,7 +1,7 @@
 function register_decomposition(model::JuMP.Model)
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
     for (key, jump_obj) in model.obj_dict
-        dec_axes = look_for_dec_axis(jump_obj)
+        dec_axes = look_for_dec_axis(jump_obj)xz
         push!(obj_axes, (key, dec_axes))
     end
     sort!(obj_axes, by = e -> length(e[2]), rev = true)
@@ -21,6 +21,7 @@ function register_decomposition(model::JuMP.Model)
             (length(dec_axes) < length(dec_axes_val)) && break
         end
     end
+    return
 end
 
 function look_for_dec_axis(container::JuMP.Containers.SparseAxisArray)
