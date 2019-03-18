@@ -85,28 +85,55 @@ function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
 end
 
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
+struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 
 set_annotation(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
 set_annotation(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
+
+MOI.supports(m::MOIU.UniversalFallback, attr::ConstraintDecomposition) = true
+MOI.supports(m::MOIU.UniversalFallback, attr::VariableDecomposition) = true
+MOI.supports(m::MOIU.UniversalFallback, attr::ConstraintDecomposition, ::Type{MOI.ConstraintIndex{F,S}}) where {F,S} = true 
+MOI.supports(m::MOIU.UniversalFallback, attr::VariableDecomposition, ::Type{MOI.VariableIndex}) = true
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, 
         ci::MOI.ConstraintIndex, annotation::Annotation)
     if !haskey(dest.conattr, attribute)
         dest.conattr[attribute] = Dict{MOI.ConstraintIndex, Tuple}()
     end
-    dest.conattr[attribute][ci] = moi_format(annotation)
+    dest.conattr[attribute][ci] = annotation
     return
 end
 
-struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition, 
         vi::MOI.VariableIndex, annotation::Annotation)
     if !haskey(dest.varattr, attribute)
         dest.varattr[attribute] = Dict{MOI.VariableIndex, Tuple}()
     end
-    dest.varattr[attribute][vi] = moi_format(annotation)
+    dest.varattr[attribute][vi] = annotation
     return
+end
+
+function MOI.get(dest::MOIU.UniversalFallback,
+        attribute::VariableDecomposition, vi::MOI.VariableIndex)
+    if haskey(dest.varattr, attribute)
+        if haskey(dest.varattr[attribute], vi)
+            return dest.varattr[attribute][vi]
+        end
+        #error("No annotation found for variable $vi.")
+    end
+    return ()
+end
+
+function MOI.get(dest::MOIU.UniversalFallback,
+        attribute::VariableDecomposition, vi::MOI.VariableIndex)
+    if haskey(dest.varattr, attribute)
+        if haskey(dest.varattr[attribute], vi)
+            return dest.varattr[attribute][vi]
+        end
+        #error("No annotation found for variable $vi.")
+    end
+    return ()
 end
 
 function set_annotations!(model::JuMP.Model, obj_ref, indices::Tuple, annotation::Annotation)
