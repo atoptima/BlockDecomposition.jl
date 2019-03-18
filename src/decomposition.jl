@@ -1,29 +1,29 @@
 # For debug purpose : must be improved
-# function print_annotations(model::JuMP.Model)
-#     for (key, obj_ref) in model.obj_dict
-#         if applicable(iterate, obj_ref)
-#             for obj in obj_ref
-#                 a = nothing
-#                 if typeof(obj) <: JuMP.ConstraintRef
-#                     a = MOI.get(model, ConstraintDecomposition(), obj)
-#                 else
-#                     a = MOI.get(model, VariableDecomposition(), obj)
-#                 end
-#                 println("$obj = $a")
-#             end
-#         else
-#             a = nothing
-#             obj = obj_ref
-#             if typeof(obj) <: JuMP.ConstraintRef
-#                 a = MOI.get(model, ConstraintDecomposition(), obj)
-#             else
-#                 a = MOI.get(model, VariableDecomposition(), obj)
-#             end
-#             println("$obj = $a")
-#         end
-#     end
-#     return
-# end
+function print_annotations(model::JuMP.Model)
+    for (key, obj_ref) in model.obj_dict
+        if applicable(iterate, obj_ref)
+            for obj in obj_ref
+                a = nothing
+                if typeof(obj) <: JuMP.ConstraintRef
+                    a = MOI.get(model, ConstraintDecomposition(), obj)
+                else
+                    a = MOI.get(model, VariableDecomposition(), obj)
+                end
+                println("$obj = $a")
+            end
+        else
+            a = nothing
+            obj = obj_ref
+            if typeof(obj) <: JuMP.ConstraintRef
+                a = MOI.get(model, ConstraintDecomposition(), obj)
+            else
+                a = MOI.get(model, VariableDecomposition(), obj)
+            end
+            println("$obj = $a")
+        end
+    end
+    return
+end
 
 function register_decomposition(model::JuMP.Model)
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
@@ -47,7 +47,7 @@ function register_decomposition(model::JuMP.Model)
             (length(dec_axes) < length(dec_axes_val)) && break
         end
     end
-    #print_annotations(model::JuMP.Model)
+    print_annotations(model::JuMP.Model)
     return
 end
 
@@ -89,7 +89,8 @@ struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 set_annotation(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
 set_annotation(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
 
-function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, ci::MOI.ConstraintIndex, annotation::Annotation)
+function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, 
+        ci::MOI.ConstraintIndex, annotation::Annotation)
     if !haskey(dest.conattr, attribute)
         dest.conattr[attribute] = Dict{MOI.ConstraintIndex, Tuple}()
     end
@@ -99,7 +100,8 @@ end
 
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 
-function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition, vi::MOI.VariableIndex, annotation::Annotation)
+function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition, 
+        vi::MOI.VariableIndex, annotation::Annotation)
     if !haskey(dest.varattr, attribute)
         dest.varattr[attribute] = Dict{MOI.VariableIndex, Tuple}()
     end
