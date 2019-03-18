@@ -1,7 +1,34 @@
+# For debug purpose : must be improved
+# function print_annotations(model::JuMP.Model)
+#     for (key, obj_ref) in model.obj_dict
+#         if applicable(iterate, obj_ref)
+#             for obj in obj_ref
+#                 a = nothing
+#                 if typeof(obj) <: JuMP.ConstraintRef
+#                     a = MOI.get(model, ConstraintDecomposition(), obj)
+#                 else
+#                     a = MOI.get(model, VariableDecomposition(), obj)
+#                 end
+#                 println("$obj = $a")
+#             end
+#         else
+#             a = nothing
+#             obj = obj_ref
+#             if typeof(obj) <: JuMP.ConstraintRef
+#                 a = MOI.get(model, ConstraintDecomposition(), obj)
+#             else
+#                 a = MOI.get(model, VariableDecomposition(), obj)
+#             end
+#             println("$obj = $a")
+#         end
+#     end
+#     return
+# end
+
 function register_decomposition(model::JuMP.Model)
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
     for (key, jump_obj) in model.obj_dict
-        dec_axes = look_for_dec_axis(jump_obj)xz
+        dec_axes = look_for_dec_axis(jump_obj)
         push!(obj_axes, (key, dec_axes))
     end
     sort!(obj_axes, by = e -> length(e[2]), rev = true)
@@ -11,7 +38,6 @@ function register_decomposition(model::JuMP.Model)
     
     for dec_node in dec_nodes 
         dec_axes_val = value_of_axes(dec_node)
-        @show dec_axes_val
         for (key, dec_axes) in obj_axes
             if length(dec_axes) == length(dec_axes_val)
                 obj_ref = model.obj_dict[key]
@@ -21,6 +47,7 @@ function register_decomposition(model::JuMP.Model)
             (length(dec_axes) < length(dec_axes_val)) && break
         end
     end
+    #print_annotations(model::JuMP.Model)
     return
 end
 
