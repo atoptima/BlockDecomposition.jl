@@ -16,10 +16,17 @@ include("decomposition.jl")
 
 function BlockModel(args...; kw...)
     m = JuMP.Model(args...; kw...)
-    JuMP.set_optimize_hook(m, register_decomposition)
-
+    JuMP.set_optimize_hook(m, optimize!)
     return m
 end
 
+function optimize!(m::JuMP.Model)
+    register_decomposition(m)
+    if JuMP.mode(m) != JuMP.DIRECT && MOIU.state(JuMP.backend(m)) == MOIU.NO_OPTIMIZER
+        throw(JuMP.NoOptimizer())
+    end
+    MOI.optimize!(JuMP.backend(m))
+    return
+end
 
 end # module
