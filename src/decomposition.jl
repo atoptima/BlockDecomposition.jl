@@ -90,10 +90,10 @@ struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 set_annotation(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
 set_annotation(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
 
-MOI.supports(m::MOIU.UniversalFallback, attr::ConstraintDecomposition) = true
-MOI.supports(m::MOIU.UniversalFallback, attr::VariableDecomposition) = true
-MOI.supports(m::MOIU.UniversalFallback, attr::ConstraintDecomposition, ::Type{MOI.ConstraintIndex{F,S}}) where {F,S} = true 
-MOI.supports(m::MOIU.UniversalFallback, attr::VariableDecomposition, ::Type{MOI.VariableIndex}) = true
+MOI.supports(m::MOI.ModelLike, attr::ConstraintDecomposition) = true
+MOI.supports(m::MOI.ModelLike, attr::VariableDecomposition) = true
+MOI.supports(m::MOI.ModelLike, attr::ConstraintDecomposition, ::Type{MOI.ConstraintIndex{F,S}}) where {F,S} = true 
+MOI.supports(m::MOI.ModelLike, attr::VariableDecomposition, ::Type{MOI.VariableIndex}) = true
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, 
         ci::MOI.ConstraintIndex, annotation::Annotation)
