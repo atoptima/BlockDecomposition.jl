@@ -101,7 +101,7 @@ struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition, vi::MOI.VariableIndex, annotation::Annotation)
     if !haskey(dest.varattr, attribute)
-        dest.varattr[attribute] = Dict{MOI.ConstraintIndex, Tuple}()
+        dest.varattr[attribute] = Dict{MOI.VariableIndex, Tuple}()
     end
     dest.varattr[attribute][vi] = moi_format(annotation)
     return
