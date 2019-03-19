@@ -31,6 +31,3 @@ function Annotation(uid::Int, P::Type{<: Problem}, D::Type{<: Decomposition}, v)
     return Annotation(uid, P, D, v, 1, 1)
 end
 
-function moi_format(a::Annotation)::Tuple
-    return (a.unique_id, a.problem, a.decomposition, a.min_multiplicity, a.max_multiplicity)
-end

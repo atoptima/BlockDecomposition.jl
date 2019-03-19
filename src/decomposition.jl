@@ -1,29 +1,29 @@
 # For debug purpose : must be improved
-function print_annotations(model::JuMP.Model)
-    for (key, obj_ref) in model.obj_dict
-        if applicable(iterate, obj_ref)
-            for obj in obj_ref
-                a = nothing
-                if typeof(obj) <: JuMP.ConstraintRef
-                    a = MOI.get(model, ConstraintDecomposition(), obj)
-                else
-                    a = MOI.get(model, VariableDecomposition(), obj)
-                end
-                println("$obj = $a")
-            end
-        else
-            a = nothing
-            obj = obj_ref
-            if typeof(obj) <: JuMP.ConstraintRef
-                a = MOI.get(model, ConstraintDecomposition(), obj)
-            else
-                a = MOI.get(model, VariableDecomposition(), obj)
-            end
-            println("$obj = $a")
-        end
-    end
-    return
-end
+# function print_annotations(model::JuMP.Model)
+#     for (key, obj_ref) in model.obj_dict
+#         if applicable(iterate, obj_ref)
+#             for obj in obj_ref
+#                 a = nothing
+#                 if typeof(obj) <: JuMP.ConstraintRef
+#                     a = MOI.get(model, ConstraintDecomposition(), obj)
+#                 else
+#                     a = MOI.get(model, VariableDecomposition(), obj)
+#                 end
+#                 println("$obj = $a")
+#             end
+#         else
+#             a = nothing
+#             obj = obj_ref
+#             if typeof(obj) <: JuMP.ConstraintRef
+#                 a = MOI.get(model, ConstraintDecomposition(), obj)
+#             else
+#                 a = MOI.get(model, VariableDecomposition(), obj)
+#             end
+#             println("$obj = $a")
+#         end
+#     end
+#     return
+# end
 
 function register_decomposition(model::JuMP.Model)
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
@@ -47,7 +47,6 @@ function register_decomposition(model::JuMP.Model)
             (length(dec_axes) < length(dec_axes_val)) && break
         end
     end
-    print_annotations(model::JuMP.Model)
     return
 end
 

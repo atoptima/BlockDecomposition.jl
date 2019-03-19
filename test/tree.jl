@@ -2,7 +2,11 @@ function test_dantzig_wolfe_different()
     d = GapToyData(5, 2)
     m = generalized_assignement(d)
     @show BD.get_tree(m)
-    JuMP.optimize!(m)
+    try
+        JuMP.optimize!(m)
+    catch e
+        @test e isa NoOptimizer
+    end
 end
 
 function test_dantzig_wolfe_identical()
