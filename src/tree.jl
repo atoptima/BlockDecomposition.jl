@@ -137,7 +137,7 @@ end
 function register_subproblem!(n::AbstractNode, id, P::Type{<: Subproblem}, D::Type{<: Decomposition}, min_mult::Int, max_mult::Int)
     tree = get_tree(n)
     uid = generateannotationid(tree)
-    annotation = Annotation(uid, P, D, id, min_mult, max_mult)
+    annotation = Annotation(uid, 0, P, D, id, min_mult, max_mult)
     create_leaf!(n, id, annotation)
 end
 
