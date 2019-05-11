@@ -30,7 +30,7 @@ function generalized_assignement(d::GapData)
 
     # dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
     # for m in Machines
-    #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.Pricing, BlockDecomposition.DantzigWolfe, 1, 1)
+    #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
     # end
     return model
 end
@@ -71,7 +71,7 @@ function cutting_stock(d::CsData)
     BD.@dantzig_wolfe_decomposition(model, dwd, Sheets)
 
     #dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
-    #BlockDecomposition.register_subproblem!(dwd, 1, BlockDecomposition.Pricing, BlockDecomposition.DantzigWolfe, 1, Sheets[end])
+    #BlockDecomposition.register_subproblem!(dwd, 1, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, Sheets[end])
     return model
 end
 
@@ -95,7 +95,7 @@ function cutting_stock_different_sizes(d::CsData)
 
     #dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
     #for t in SheetTypes
-    #    BlockDecomposition.register_subproblem!(dwd, (t, 1), BlockDecomposition.Pricing, BlockDecomposition.DantzigWolfe, 1, NbSheets[t])
+    #    BlockDecomposition.register_subproblem!(dwd, (t, 1), BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, NbSheets[t])
     #end
     return model
 end

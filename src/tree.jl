@@ -174,7 +174,7 @@ macro dantzig_wolfe_decomposition(args...)
     node, name, axis = args
     dw_exp = quote 
         $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)
-        BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.Pricing, BlockDecomposition.DantzigWolfe)
+        BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe)
     end
     return esc(dw_exp)
 end

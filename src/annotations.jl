@@ -4,18 +4,18 @@ struct DantzigWolfe <: Decomposition end
 struct Benders <: Decomposition end
 struct CombinedBendersDanztigWolfe <: Decomposition end
 
-abstract type Problem end
-struct Original <: Problem end
-struct Master <: Problem end
-abstract type Subproblem <: Problem end
-struct Pricing <: Subproblem end
-struct Separation <: Subproblem end
+abstract type Formulation end
+struct Original <: Formulation end
+struct Master <: Formulation end
+abstract type Subproblem <: Formulation end
+struct DwPricingSp <: Subproblem end
+struct BendersSepSp <: Subproblem end
 
 
-struct Annotation{T, P <: Problem, D <: Decomposition}
+struct Annotation{T, F<:Formulation, D<:Decomposition}
     unique_id::Int
     parent_id::Int # 0 if original formulation
-    problem::Type{P}
+    problem::Type{F}
     decomposition::Type{D}
     axis_index_value::T
     min_multiplicity::Int
@@ -24,11 +24,11 @@ end
 
 OriginalAnnotation() = Annotation(0, 0, Original, NoDecomposition, 0, 1, 1)
 
-function MasterAnnotation(uid::Int, D::Type{<: Decomposition})
+function MasterAnnotation(uid::Int, D::Type{<:Decomposition})
     return Annotation(uid, 0, Master, D, 0, 1, 1)
 end
 
-function Annotation(uid::Int, P::Type{<: Problem}, D::Type{<: Decomposition}, v)
-    return Annotation(uid, 0, P, D, v, 1, 1)
+function Annotation(uid::Int, F::Type{<:Formulation}, D::Type{<:Decomposition}, v)
+    return Annotation(uid, 0, F, D, v, 1, 1)
 end
 
