@@ -22,30 +22,7 @@ identical(axis::Axis) = axis.identical
 getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
 
-macro axis(args...)
-    definition = args[1]
-    container = args[2]
-    identical = _axis_identical_(args)
-    exp = :()
-    if typeof(definition) != Symbol
-        exp = generate_axis_dense_array(definition, container, identical)
-    else
-        name = definition
-        exp = :($name = $(generate_axis(name, container, identical)))
-    end
-    return esc(exp)
-end
-
-function generate_axis(name, id, container, i::Bool)
-    sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
-    return :(BlockDecomposition.Axis($sym_name, $id, $container, $i))
-end
-
-function generate_axis(name, container, i::Bool)
-    return generate_axis(name, :(tuple()), container, i)
-end
-
-function _axis_identical_(args)
+function _axis_identical(args)
     if length(args) == 3
         if args[3] == :Identical
             return true
@@ -56,25 +33,49 @@ function _axis_identical_(args)
     return false
 end
 
-function _axis_array_indices_(indexsets)
+function _axis_array_indices(indexsets)
     return [indexset.args[2] for indexset in indexsets]
 end
 
-function _axis_array_sets_(indexsets)
+function _axis_array_sets(indexsets)
     return [indexset.args[3] for indexset in indexsets]
+end
+
+function _generate_axis(name, id, container, i::Bool)
+    sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
+    return :(BlockDecomposition.Axis($sym_name, $id, $container, $i))
+end
+
+function _generate_axis(name, container, i::Bool)
+    return _generate_axis(name, :(tuple()), container, i)
 end
 
 # Returns a JuMP.Container.DenseAxisArray{Axis}
 # see https://github.com/JuliaOpt/JuMP.jl/blob/master/src/Containers/DenseAxisArray.jl
-function generate_axis_dense_array(definition, container, identical)
+function _generate_axis_dense_array(definition, container, identical)
     name = definition.args[1]
     indexsets = definition.args[2:end]
     nbindexsets = length(indexsets)
-    indices = _axis_array_indices_(indexsets)
-    sets = _axis_array_sets_(indexsets)
-    decomposition_axis = generate_axis(name, Expr(:tuple, indices...), container, identical)
+    indices = _axis_array_indices(indexsets)
+    sets = _axis_array_sets(indexsets)
+    decomposition_axis = _generate_axis(name, Expr(:tuple, indices...), container, identical)
     generator = Expr(:generator, decomposition_axis, [Expr(:(=), indices[i], sets[i]) for i in 1:nbindexsets]...)
     array = Expr(:comprehension, generator)
     axisarray = Expr(:call, JuMP.Containers.DenseAxisArray, array, sets...)
     return :($name = $axisarray)
 end
+
+macro axis(args...)
+    definition = args[1]
+    container = args[2]
+    identical = _axis_identical(args)
+    exp = :()
+    if typeof(definition) != Symbol
+        exp = _generate_axis_dense_array(definition, container, identical)
+    else
+        name = definition
+        exp = :($name = $(_generate_axis(name, container, identical)))
+    end
+    return esc(exp)
+end
+

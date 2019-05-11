@@ -7,7 +7,7 @@ import MathOptInterface.Utilities
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-export BlockModel, @axis, @dantzig_wolfe_decomposition
+export BlockModel, @axis, @dantzig_wolfe_decomposition, annotation
 
 include("axis.jl")
 include("annotations.jl")
@@ -27,6 +27,14 @@ function optimize!(m::JuMP.Model)
     end
     MOI.optimize!(JuMP.backend(m))
     return
+end
+
+function annotation(model::JuMP.Model, objref::JuMP.ConstraintRef)
+    MOI.get(model, ConstraintDecomposition(), objref)
+end
+
+function annotation(model::JuMP.Model, objref::JuMP.VariableRef)
+    MOI.get(model, VariableDecomposition(), objref)
 end
 
 end # module

@@ -197,15 +197,15 @@ end
 
 function Base.show(io::IO, a::Annotation)
     print(io, "Annotation(")
-    print(io, a.problem)
+    print(io, getformulation(a))
     print(io, ", ")
-    print(io, a.decomposition)
+    print(io, getdecomposition(a))
     print(io, ", ")
-    print(io, a.min_multiplicity)
+    print(io, getminmultiplicity(a))
     print(io, " <= multiplicity <= ")
-    print(io, a.max_multiplicity)
+    print(io, getmaxmultiplicity(a))
     print(io, ", ")
-    print(io, a.unique_id)
+    print(io, getid(a))
     print(io, ")")
     return
 end

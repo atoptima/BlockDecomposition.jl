@@ -15,12 +15,19 @@ struct BendersSepSp <: Subproblem end
 struct Annotation{T, F<:Formulation, D<:Decomposition}
     unique_id::Int
     parent_id::Int # 0 if original formulation
-    problem::Type{F}
+    formulation::Type{F}
     decomposition::Type{D}
     axis_index_value::T
     min_multiplicity::Int
     max_multiplicity::Int
 end
+
+getid(a::Annotation) = a.unique_id
+getparent(a::Annotation) = a.parent_id
+getformulation(a::Annotation) = a.formulation
+getdecomposition(a::Annotation) = a.decomposition
+getminmultiplicity(a::Annotation) = a.min_multiplicity
+getmaxmultiplicity(a::Annotation) = a.max_multiplicity
 
 OriginalAnnotation() = Annotation(0, 0, Original, NoDecomposition, 0, 1, 1)
 

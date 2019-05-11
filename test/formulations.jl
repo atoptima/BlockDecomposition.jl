@@ -32,7 +32,7 @@ function generalized_assignement(d::GapData)
     # for m in Machines
     #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
     # end
-    return model
+    return model, x, cov, knp
 end
 
 # Test pure master variables, constraint without id & variables without id
@@ -45,7 +45,7 @@ function generalized_assignement_penalties(d::GapData)
     @variable(model, z, Int)
 
     @constraint(model, cov[j in d.jobs], sum(x[j, m] for m in Machines) + y[j] >= 1)
-    @constraint(model, limit_nb_jobs_not_assigned, sum(y[j] for j in d.jobs)  <= 3 + z)
+    @constraint(model, lim, sum(y[j] for j in d.jobs)  <= 3 + z)
 
     @constraint(model, knp[m in Machines], 
         sum(d.weights[j, m] * x[j, m] for j in d.jobs) <= d.capacities[m])
@@ -59,7 +59,7 @@ function generalized_assignement_penalties(d::GapData)
     # for m in Machines
     #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
     # end
-    return model
+    return model, x, y, z, cov, knp, lim
 end
 
 struct CsData

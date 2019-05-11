@@ -114,6 +114,16 @@ function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     return
 end
 
+function MOI.get(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
+        ci::MOI.ConstraintIndex)
+    return dest.conattr[attribute][ci]
+end
+
+function MOI.get(dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
+        vi::MOI.VariableIndex)
+    return dest.varattr[attribute][vi]
+end
+
 function setannotations!(model::JuMP.Model, objref::AbstractArray, indices::Tuple, 
         annotation::Annotation)
     if applicable(iterate, objref[indices...])
