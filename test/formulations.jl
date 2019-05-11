@@ -35,6 +35,33 @@ function generalized_assignement(d::GapData)
     return model
 end
 
+# Test pure master variables, constraint without id & variables without id
+function generalized_assignement_penalties(d::GapData)
+    BD.@axis(Machines, d.machines)
+
+    model = BlockModel()
+    @variable(model, x[j in d.jobs, m in Machines], Bin)
+    @variable(model, y[j in d.jobs], Bin)
+    @variable(model, z, Int)
+
+    @constraint(model, cov[j in d.jobs], sum(x[j, m] for m in Machines) + y[j] >= 1)
+    @constraint(model, limit_nb_jobs_not_assigned, sum(y[j] for j in d.jobs)  <= 3 + z)
+
+    @constraint(model, knp[m in Machines], 
+        sum(d.weights[j, m] * x[j, m] for j in d.jobs) <= d.capacities[m])
+
+    @objective(model, Min, 
+        sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in Machines) + 1000 * z)
+
+    BD.@dantzig_wolfe_decomposition(model, dwd, Machines)
+
+    # dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
+    # for m in Machines
+    #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
+    # end
+    return model
+end
+
 struct CsData
     sheet_types
     nb_sheets

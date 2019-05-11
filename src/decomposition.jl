@@ -33,16 +33,17 @@ function register_decomposition(model::JuMP.Model)
     end
     sort!(obj_axes, by = e -> length(e[2]), rev = true)
 
-    dec_nodes = get_nodes(get_tree(model))
+    dec_nodes = getnodes(gettree(model))
     sort!(dec_nodes, by = n -> get_depth(n), rev = true)
     
     for dec_node in dec_nodes 
-        dec_axes_val = value_of_axes(dec_node)
+        dec_axes_val = axes_value(dec_node)
         for (key, dec_axes) in obj_axes
+            
             if length(dec_axes) == length(dec_axes_val)
                 obj_ref = model.obj_dict[key]
                 indices = compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
-                set_annotations!(model, obj_ref, indices, annotation(dec_node))
+                setannotations!(model, obj_ref, indices, annotation(dec_node))
             end
             (length(dec_axes) < length(dec_axes_val)) && break
         end
@@ -64,6 +65,9 @@ function look_for_dec_axis(container::JuMP.Containers.DenseAxisArray)::Vector{Ax
     return dec_axes
 end
 
+look_for_dec_axis(constr::JuMP.ConstraintRef) = Vector{Axis}()
+look_for_dec_axis(var::JuMP.VariableRef) = Vector{Axis}()
+
 function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
     tuple = ()
     for obj_axis in obj_ref.axes
@@ -83,11 +87,14 @@ function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
     return tuple
 end
 
+compute_indices_of_decomposition(obj_ref::JuMP.ConstraintRef, _, _) = ()
+compute_indices_of_decomposition(obj_ref::JuMP.VariableRef, _, _) = ()
+
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 
-set_annotation(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
-set_annotation(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
+setannotation!(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
+setannotation!(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, 
         ci::MOI.ConstraintIndex, annotation::Annotation)
@@ -107,13 +114,24 @@ function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     return
 end
 
-function set_annotations!(model::JuMP.Model, obj_ref, indices::Tuple, annotation::Annotation)
-    if applicable(iterate, obj_ref[indices...])
-        for obj in obj_ref[indices...]
-            set_annotation(model, obj, annotation)
+function setannotations!(model::JuMP.Model, objref::AbstractArray, indices::Tuple, 
+        annotation::Annotation)
+    if applicable(iterate, objref[indices...])
+        for obj in objref[indices...]
+            setannotation!(model, obj, annotation)
         end
     else
-        obj = obj_ref[indices...]
-        set_annotation(model, obj, annotation)
+        obj = objref[indices...]
+        setannotation!(model, obj, annotation)
     end
+end
+
+function setannotations!(model::JuMP.Model, objref::JuMP.ConstraintRef, _, 
+        annotation::Annotation)
+    setannotation!(model, objref, annotation)
+end
+
+function setannotations!(model::JuMP.Model, objref::JuMP.VariableRef, _, 
+        annotation::Annotation)
+    setannotation!(model, objref, annotation)
 end
