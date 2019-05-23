@@ -169,7 +169,7 @@ end
 
 macro dantzig_wolfe_decomposition(args...)
     if length(args) != 3
-        error("Three arguments expected. Model, Decomposition name, Axis")
+        error("Three arguments expected: model, decomposition name, and axis")
     end
     node, name, axis = args
     dw_exp = quote 
@@ -177,6 +177,18 @@ macro dantzig_wolfe_decomposition(args...)
         BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe)
     end
     return esc(dw_exp)
+end
+
+macro benders_decomposition(args...)
+    if length(args) != 3
+        error("Three arguments expected: model, decomposition name, and axis")
+    end
+    node, name, axis = args
+    b_exp = quote
+        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.Benders, $axis)
+        BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.BendersSepSp, BlockDecomposition.Benders)
+    end
+    return esc(b_exp)
 end
 
 function Base.show(io::IO, r::Root)
