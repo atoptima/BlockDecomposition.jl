@@ -55,11 +55,49 @@ function generalized_assignement_penalties(d::GapData)
 
     BD.@dantzig_wolfe_decomposition(model, dwd, Machines)
 
-    # dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
-    # for m in Machines
-    #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
-    # end
     return model, x, y, z, cov, knp, lim
+end
+
+struct LsData
+    nbitems
+    nbperiods
+    demand
+    prodcost
+    setupcost
+end
+
+function LsToyData(nbitems::Int, nbperiods::Int)
+    demand = [rand(0:10) for i in 1:nbitems, t in 1:nbperiods]
+    prodcost = [rand(0:5) for i in 1:nbitems, t in 1:nbperiods]
+    setupcost = [rand(0:5) for i in 1:nbitems, t in 1:nbperiods]
+    return LsData(nbitems, nbperiods, demand, prodcost, setupcost)
+end
+
+function single_mode_multi_item_lot_sizing(d::LsData)
+    mils = BlockModel()
+
+    @axis(I, 1:d.nbitems)
+    T = 1:d.nbperiods
+
+    @variable(mils, x[i in 1:d.nbitems, t in T] >= 0) #no axis -> master
+    @variable(mils, y[i in I, t in T] >= 0)
+
+    @constraint(mils, singlemode[t in T], sum(y[i, t] for i in I) <= 1)
+
+    @constraint(mils, setup[i in I, t in T], x[i, t] - sum(d.demand) * y[i, t] <= 0)
+
+    @constraint(mils, cov[i in I, t in T], 
+        sum(x[i, τ] for τ in 1:t) >= sum(d.demand[i, τ] for τ in 1:t)
+    )
+
+    @objective(mils, Min, 
+        sum(d.prodcost[i, t] * x[i, t] for i in I, t in T) +
+        sum(d.setupcost[i, t] * y[i, t] for i in I, t in T)
+    )
+
+    @benders_decomposition(mils, dec, I)
+
+    return mils, x, y, singlemode, setup, cov
 end
 
 struct CsData

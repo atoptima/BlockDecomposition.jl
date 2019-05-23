@@ -1,12 +1,3 @@
-function test_annotation(ann::BD.Annotation, F::Type{<:BD.Formulation}, 
-        D::Type{<:BD.Decomposition}, minmult, maxmult)
-    @test BD.getformulation(ann) == F
-    @test BD.getdecomposition(ann) == D
-    @test BD.getminmultiplicity(ann) == minmult
-    @test BD.getmaxmultiplicity(ann) == maxmult
-    return
-end
-
 function test_dantzig_wolfe_different()
     d = GapToyData(5, 2)
     @testset "Classic GAP" begin
