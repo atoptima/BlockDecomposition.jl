@@ -1,7 +1,7 @@
 function test_dantzig_wolfe_different()
     d = GapToyData(5, 2)
     @testset "Classic GAP" begin
-        model, x, cov, knp = generalized_assignement(d)
+        model, x, cov, knp, dwd = generalized_assignement(d)
         @show BD.gettree(model)
         try
             JuMP.optimize!(model)
@@ -17,7 +17,7 @@ function test_dantzig_wolfe_different()
     end
 
     @testset "GAP + Pure master vars + Constr & Var without index" begin
-        model, x, y, z, cov, knp, lim = generalized_assignement_penalties(d)
+        model, x, y, z, cov, knp, lim, dwd = generalized_assignement_penalties(d)
         try
             JuMP.optimize!(model)
         catch e

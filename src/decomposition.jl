@@ -24,6 +24,14 @@
 #     end
 #     return
 # end
+assignsolver(n::AbstractNode, f::Function) = n.master.optimizer_builder = f
+assignsolver(n::Leaf, f::Function) = n.problem.optimizer_builder = f
+function assignsolver(nodes::Vector{<:AbstractNode}, f::Function)
+    for n in nodes
+        assignsolver(n, f)
+    end
+    return
+end
 
 function register_decomposition(model::JuMP.Model)
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
@@ -35,7 +43,7 @@ function register_decomposition(model::JuMP.Model)
 
     dec_nodes = getnodes(gettree(model))
     sort!(dec_nodes, by = n -> get_depth(n), rev = true)
-    
+
     for dec_node in dec_nodes 
         dec_axes_val = axes_value(dec_node)
         for (key, dec_axes) in obj_axes

@@ -71,6 +71,9 @@ function Root(t::Tree, D::Type{<: Decomposition}, axis::A) where {A <: AxisConta
     return Root(t, 0, problem, master, empty_dict, axis)
 end
 
+Base.getindex(n::Union{Node,Root}, i::Int) = n.subproblems[i]
+Base.getindex(n::AbstractNode, r::UnitRange) = [n.subproblems[i] for i in r]
+
 hasTree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
 function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
@@ -85,6 +88,8 @@ set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::A) whe
 gettree(n::AbstractNode) = n.tree
 gettree(m::JuMP.Model) = m.ext[:decomposition_tree]
 get_depth(n::AbstractNode) = n.depth
+getoptimizerbuilder(n::AbstractNode) = n.master.optimizer_builder
+getoptimizerbuilder(n::Leaf) = n.problem.optimizer_builder
 
 function getnodes(tree::Tree)
     vec_nodes = Vector{AbstractNode}()
@@ -137,7 +142,7 @@ end
 function register_subproblem!(n::AbstractNode, id, P::Type{<: Subproblem}, D::Type{<: Decomposition}, min_mult::Int, max_mult::Int)
     tree = gettree(n)
     uid = generateannotationid(tree)
-    annotation = Annotation(uid, 0, P, D, id, min_mult, max_mult)
+    annotation = Annotation(uid, 0, P, D, id, min_mult, max_mult, nothing)
     create_leaf!(n, id, annotation)
 end
 
