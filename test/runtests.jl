@@ -18,10 +18,11 @@ include("axis.jl")
 include("formulations.jl")
 include("dantzigwolfe.jl")
 include("benders.jl")
+include("assignsolver.jl")
 
 axis_declarations()
 test_dantzig_wolfe_different()
 test_dantzig_wolfe_identical()
 test_dantzig_wolfe_diffidentical()
 test_benders()
-
+test_assignsolver()

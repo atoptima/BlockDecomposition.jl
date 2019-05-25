@@ -32,7 +32,7 @@ function generalized_assignement(d::GapData)
     # for m in Machines
     #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
     # end
-    return model, x, cov, knp
+    return model, x, cov, knp, dwd
 end
 
 # Test pure master variables, constraint without id & variables without id
@@ -55,7 +55,7 @@ function generalized_assignement_penalties(d::GapData)
 
     BD.@dantzig_wolfe_decomposition(model, dwd, Machines)
 
-    return model, x, y, z, cov, knp, lim
+    return model, x, y, z, cov, knp, lim, dwd
 end
 
 struct LsData
@@ -97,7 +97,7 @@ function single_mode_multi_item_lot_sizing(d::LsData)
 
     @benders_decomposition(mils, dec, I)
 
-    return mils, x, y, singlemode, setup, cov
+    return mils, x, y, singlemode, setup, cov, dec
 end
 
 struct CsData
