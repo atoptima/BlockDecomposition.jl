@@ -30,7 +30,7 @@ function assignsolver(nodes::Vector{<:AbstractNode}, f::Function)
     for n in nodes
         assignsolver(n, f)
     end
-    return
+    return f
 end
 
 function register_decomposition(model::JuMP.Model)
