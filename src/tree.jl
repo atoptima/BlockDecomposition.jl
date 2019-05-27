@@ -74,11 +74,13 @@ end
 Base.getindex(n::Union{Node,Root}, i::Int) = n.subproblems[i]
 Base.getindex(n::AbstractNode, r::UnitRange) = [n.subproblems[i] for i in r]
 
-hasTree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
+has_tree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
 function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
-    if !hasTree(model)
-        model.ext[:decomposition_tree] = Tree(D, axis)
+    if !has_tree(model)
+        tree = Tree(D, axis)
+        model.ext[:decomposition_tree] = tree
+        settree!(model, tree)
     else
         error("Cannot decompose twice at the same level.")
     end

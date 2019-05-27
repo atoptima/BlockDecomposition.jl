@@ -100,6 +100,7 @@ compute_indices_of_decomposition(obj_ref::JuMP.VariableRef, _, _) = ()
 
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
+struct DecompositionTree <: MOI.AbstractModelAttribute end
 
 setannotation!(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
 setannotation!(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
@@ -122,6 +123,12 @@ function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     return
 end
 
+function MOI.set(dest::MOIU.UniversalFallback, attribute::DecompositionTree,
+        tree)
+    dest.modattr[attribute] = tree
+    return
+end
+
 function MOI.get(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
         ci::MOI.ConstraintIndex)
     return dest.conattr[attribute][ci]
@@ -130,6 +137,10 @@ end
 function MOI.get(dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
         vi::MOI.VariableIndex)
     return dest.varattr[attribute][vi]
+end
+
+function MOI.get(dest::MOIU.UniversalFallback, attribute::DecompositionTree)
+    return dest.modattr[attribute]
 end
 
 function setannotations!(model::JuMP.Model, objref::AbstractArray, indices::Tuple, 
@@ -153,3 +164,5 @@ function setannotations!(model::JuMP.Model, objref::JuMP.VariableRef, _,
         annotation::Annotation)
     setannotation!(model, objref, annotation)
 end
+
+settree!(model::JuMP.Model, tree) = MOI.set(model, DecompositionTree(), tree)
