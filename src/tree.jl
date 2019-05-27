@@ -21,6 +21,8 @@ mutable struct Tree
     end
 end
 
+getroot(t::Tree) = t.root
+
 function generateannotationid(tree)
     tree.current_uid += 1
     return tree.current_uid
@@ -62,6 +64,10 @@ end
 annotation(n::Leaf) = n.problem
 annotation(n::Root) = n.master # TODO : check if true in nested decomposition
 annotation(n::Node) = n.master # TODO : check if true in nested decomposition
+
+subproblems(n::Leaf) = Dict{Any, AbstractNode}()
+subproblems(n::Root) = n.subproblems
+subproblems(n::Node) = n.subproblems
 
 function Root(t::Tree, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     uid = generateannotationid(t)
