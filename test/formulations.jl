@@ -14,7 +14,7 @@ function GapToyData(nbjobs::Int, nbmachines::Int)
 end
 
 function generalized_assignement(d::GapData)
-    BD.@axis(Machines, d.machines)
+    BD.@axis(Machines, d.machines, lb = 0)
 
     model = BlockModel()
     @variable(model, x[j in d.jobs, m in Machines], Bin)
@@ -37,7 +37,7 @@ end
 
 # Test pure master variables, constraint without id & variables without id
 function generalized_assignement_penalties(d::GapData)
-    BD.@axis(Machines, d.machines)
+    BD.@axis(Machines, d.machines, lb = 0)
 
     model = BlockModel()
     @variable(model, x[j in d.jobs, m in Machines], Bin)

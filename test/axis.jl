@@ -6,6 +6,7 @@ function axis_declarations()
     BD.@axis(E[a in A], 1:a)
     BD.@axis(F[i in 1:5, j in 1:2], 1:i*j, Identical)
     BD.@axis(G, ["lorem", "ipsum", "dolor"])
+    BD.@axis(H, 1:3, lb = 0)
 
     @testset "Axis Declaration A" begin
         @test length(A) == 3
@@ -53,5 +54,9 @@ function axis_declarations()
         @test G[1] == "lorem"
         @test G[2] == "ipsum"
         @test G[3] == "dolor"
+    end
+
+    @testset "Axis Declaration H" begin
+        @test BD.lowermultiplicity(H) == 0
     end
 end
