@@ -159,7 +159,7 @@ function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<: Subproble
         register_subproblem!(n, 1, P, D, 0, length(axis))
     else
         for a in axis
-            register_subproblem!(n, a, P, D, 1, 1)
+            register_subproblem!(n, a, P, D, lowermultiplicity(axis), 1)
         end
     end
 end
@@ -175,7 +175,7 @@ function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, 
         register_subproblem!(n, (multi_index..., 1), P, D, 0, length(axis))
     else
         for a in axis
-            register_subproblem!(n, (multi_index..., a), P, D, 1, 1)
+            register_subproblem!(n, (multi_index..., a), P, D, lowermultiplicity(axis), 1)
         end
     end
 end

@@ -11,9 +11,9 @@ function test_dantzig_wolfe_different()
         cov_ann = BD.annotation(model, cov[1])
         test_annotation(cov_ann, BD.Master, BD.DantzigWolfe, 1, 1)
         x_ann = BD.annotation(model, x[1,1])
-        test_annotation(x_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+        test_annotation(x_ann, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
         knp_ann = BD.annotation(model, knp[1])
-        test_annotation(knp_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+        test_annotation(knp_ann, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
     end
 
     @testset "GAP + Pure master vars + Constr & Var without index" begin
