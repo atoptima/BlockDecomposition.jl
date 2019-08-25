@@ -34,7 +34,8 @@ struct Leaf <: AbstractNode
     problem::Annotation
     depth::Int
     # Edge id from parent
-    edge_id::Any
+    edge_id::Tuple{Any}
+    multiple_children::Bool
 end
 
 struct Node{A} <: AbstractNode where {A <: AxisContainer}
@@ -42,8 +43,9 @@ struct Node{A} <: AbstractNode where {A <: AxisContainer}
     parent::AbstractNode
     depth::Int
     problem::Annotation
-    # Edge id from parent
-    edge_id::Any
+    # Link from parent
+    edge_id::Tuple{Any}
+    multiple_children::Bool
     # Information about the decomposition
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
@@ -68,6 +70,8 @@ annotation(n::Node) = n.master # TODO : check if true in nested decomposition
 subproblems(n::Leaf) = Dict{Any, AbstractNode}()
 subproblems(n::Root) = n.subproblems
 subproblems(n::Node) = n.subproblems
+
+getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
 function Root(t::Tree, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
     uid = generateannotationid(t)
@@ -117,23 +121,22 @@ function getnodes(tree::Tree)
     return vec_nodes
 end
 
-function axes_value(n::AbstractNode)
+function get_elems_of_axes_in_node(n::AbstractNode)
     axes_names_values = Dict{Symbol, Any}()
     current_node = n
     while !(typeof(current_node) <: Root)
-        # some modification to do for decomposition with 2 indices
-        axes_names_values[current_node.parent.axis.name] = current_node.edge_id
+        axes_names_values[current_node.parent.axis.name] = getedgeidfromparent(current_node)
         current_node = current_node.parent
     end
     return axes_names_values
 end
 
 function create_leaf!(n::AbstractNode, id, a::Annotation)
-    edge_val = id
+    edge_val = (id,)
     if identical(n.axis)
-        edge_val = n.axis.container
+        edge_val = (Colon(),) #n.axis.container
     end
-    leaf = Leaf(gettree(n), n, a, get_depth(n) + 1, edge_val)
+    leaf = Leaf(gettree(n), n, a, get_depth(n) + 1, edge_val, identical(n.axis))
     get!(n.subproblems, id, leaf)
 end
 

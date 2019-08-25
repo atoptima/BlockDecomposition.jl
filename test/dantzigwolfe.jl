@@ -2,7 +2,6 @@ function test_dantzig_wolfe_different()
     d = GapToyData(5, 2)
     @testset "Classic GAP" begin
         model, x, cov, knp, dwd = generalized_assignement(d)
-        @show BD.gettree(model)
         try
             JuMP.optimize!(model)
         catch e
@@ -33,10 +32,23 @@ function test_dantzig_wolfe_different()
 end
 
 function test_dantzig_wolfe_identical()
-    #d = CsToyData(1, 10)
-    #m = cutting_stock(d) # Not working yet : identical subproblems
-    #@show BD.gettree(m)
-    #JuMP.optimize!(m)
+    @testset "CS" begin
+        d = CsToyData(1, 10)
+        model, x, y, cov, knp, dec = cutting_stock(d)
+        try
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+        y_ann1 = BD.annotation(model, y[1])
+        test_annotation(y_ann1, BD.DwPricingSp, BD.DantzigWolfe, 0, d.nb_sheets[1])
+        y_ann2 = BD.annotation(model, y[2])
+        @test y_ann2 == y_ann1
+        knp_ann = BD.annotation(model, knp[3])
+        @test knp_ann == y_ann1
+        x_ann = BD.annotation(model, x[1,5])
+        @test x_ann == y_ann1
+    end
 end
 
 function test_dantzig_wolfe_diffidentical()

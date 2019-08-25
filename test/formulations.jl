@@ -28,10 +28,6 @@ function generalized_assignement(d::GapData)
 
     BD.@dantzig_wolfe_decomposition(model, dwd, Machines)
 
-    # dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
-    # for m in Machines
-    #     BlockDecomposition.register_subproblem!(dwd, m, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, 1)
-    # end
     return model, x, cov, knp, dwd
 end
 
@@ -119,8 +115,10 @@ end
 
 function cutting_stock(d::CsData)
     @assert length(d.sheet_types) == 1
+    nb_sheets = d.nb_sheets[1]
+    sheet_size = d.sheets_sizes[1]
 
-    BD.@axis(Sheets, 1:7, Identical)
+    BD.@axis(Sheets, 1:nb_sheets, Identical)
 
     model = BlockModel()
     @variable(model, 0 <= x[i in d.items, s in Sheets] <= d.demands[i], Int)
@@ -129,15 +127,13 @@ function cutting_stock(d::CsData)
     @constraint(model, cov[i in d.items], 
         sum(x[i, s] for s in Sheets) >= d.demands[i])
     @constraint(model, knp[s in Sheets], 
-        sum(d.widths[i] * x[i, s] for i in d.items) <= d.sheets_sizes[1] * y[s])
+        sum(d.widths[i] * x[i, s] for i in d.items) <= sheet_size * y[s])
 
     @objective(model, Min, sum(y[s] for s in Sheets))
 
-    BD.@dantzig_wolfe_decomposition(model, dwd, Sheets)
+    BD.@dantzig_wolfe_decomposition(model, dec, Sheets)
 
-    #dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
-    #BlockDecomposition.register_subproblem!(dwd, 1, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, 1, Sheets[end])
-    return model
+    return model, x, y, cov, knp, dec
 end
 
 function cutting_stock_different_sizes(d::CsData)
@@ -156,7 +152,7 @@ function cutting_stock_different_sizes(d::CsData)
 
     @objective(model, Min, sum(y[t, s] for t in d.sheet_types, s in Sheets[t]))
 
-    #BD.@dantzig_wolfe_decomposition(model, dwd, Sheets)
+    BD.@dantzig_wolfe_decomposition(model, dwd, Sheets)
 
     #dwd = BlockDecomposition.decompose_leaf(model, BlockDecomposition.DantzigWolfe)
     #for t in SheetTypes

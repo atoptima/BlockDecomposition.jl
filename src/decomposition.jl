@@ -33,27 +33,39 @@ function assignsolver(nodes::Vector{<:AbstractNode}, f::Function)
     return f
 end
 
+"""
+    register_decomposition(model)
+
+Assign to each variable and constraint an annotation indicating in 
+which partition (master/subproblem) of the original formulation the variable 
+or the constraint is located.
+"""
 function register_decomposition(model::JuMP.Model)
+    # First, we retrieve the axis associtated to each JuMP object.
+    # If there is no axis linked to a JuMP object, elements of the object are
+    # in the master.
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
     for (key, jump_obj) in model.obj_dict
         dec_axes = look_for_dec_axis(jump_obj)
         push!(obj_axes, (key, dec_axes))
     end
+    
+    # We sort JuMP objects according to the number of decomposition performed
+    # over them.
     sort!(obj_axes, by = e -> length(e[2]), rev = true)
 
     dec_nodes = getnodes(gettree(model))
     sort!(dec_nodes, by = n -> get_depth(n), rev = true)
 
     for dec_node in dec_nodes 
-        dec_axes_val = axes_value(dec_node)
+        elem_axes_in_partition = get_elems_of_axes_in_node(dec_node)
         for (key, dec_axes) in obj_axes
-            
-            if length(dec_axes) == length(dec_axes_val)
+            if length(dec_axes) == length(elem_axes_in_partition)
                 obj_ref = model.obj_dict[key]
-                indices = compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
+                indices = get_indices_of_obj_in_partition(obj_ref, dec_axes, elem_axes_in_partition)
                 setannotations!(model, obj_ref, indices, annotation(dec_node))
             end
-            (length(dec_axes) < length(dec_axes_val)) && break
+            (length(dec_axes) < length(elem_axes_in_partition)) && break
         end
     end
     return
@@ -73,10 +85,12 @@ function look_for_dec_axis(container::JuMP.Containers.DenseAxisArray)::Vector{Ax
     return dec_axes
 end
 
+#function look_for_dec_axis(container::JuMP.Containers.)
+
 look_for_dec_axis(constr::JuMP.ConstraintRef) = Vector{Axis}()
 look_for_dec_axis(var::JuMP.VariableRef) = Vector{Axis}()
 
-function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
+function get_indices_of_obj_in_partition(obj_ref, dec_axes, dec_axes_val)
     tuple = ()
     for obj_axis in obj_ref.axes
         found_dec_axes = false
@@ -84,7 +98,7 @@ function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
             for dec_axis in dec_axes 
                 if obj_axis.name == dec_axis.name
                     found_dec_axes = true
-                    tuple = (tuple..., dec_axes_val[dec_axis.name])
+                    tuple = (tuple..., dec_axes_val[dec_axis.name]...)
                 end
             end
         end
@@ -95,8 +109,8 @@ function compute_indices_of_decomposition(obj_ref, dec_axes, dec_axes_val)
     return tuple
 end
 
-compute_indices_of_decomposition(obj_ref::JuMP.ConstraintRef, _, _) = ()
-compute_indices_of_decomposition(obj_ref::JuMP.VariableRef, _, _) = ()
+get_indices_of_obj_in_partition(obj_ref::JuMP.ConstraintRef, _, _) = ()
+get_indices_of_obj_in_partition(obj_ref::JuMP.VariableRef, _, _) = ()
 
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
