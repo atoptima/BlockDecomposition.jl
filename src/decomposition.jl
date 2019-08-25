@@ -85,12 +85,14 @@ function look_for_dec_axis(container::JuMP.Containers.DenseAxisArray)::Vector{Ax
     return dec_axes
 end
 
-#function look_for_dec_axis(container::JuMP.Containers.)
-
 look_for_dec_axis(constr::JuMP.ConstraintRef) = Vector{Axis}()
 look_for_dec_axis(var::JuMP.VariableRef) = Vector{Axis}()
+look_for_dec_axis(vars::Array{<:JuMP.VariableRef, N}) where N =  Vector{Axis}()
+look_for_dec_axis(constrs::Array{<:JuMP.ConstraintRef, N}) where N =  Vector{Axis}()
 
-function get_indices_of_obj_in_partition(obj_ref, dec_axes, dec_axes_val)
+function get_indices_of_obj_in_partition(
+    obj_ref::JuMP.Containers.DenseAxisArray, dec_axes, dec_axes_val
+)
     tuple = ()
     for obj_axis in obj_ref.axes
         found_dec_axes = false
@@ -111,6 +113,8 @@ end
 
 get_indices_of_obj_in_partition(obj_ref::JuMP.ConstraintRef, _, _) = ()
 get_indices_of_obj_in_partition(obj_ref::JuMP.VariableRef, _, _) = ()
+get_indices_of_obj_in_partition(obj_ref::Array{<:JuMP.VariableRef, N}, _, _) where N = ntuple(i -> Colon(), N)
+get_indices_of_obj_in_partition(obj_ref::Array{<:JuMP.ConstraintRef, N}, _, _) where N = ntuple(i -> Colon(), N)
 
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end

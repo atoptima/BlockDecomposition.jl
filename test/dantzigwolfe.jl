@@ -29,6 +29,7 @@ function test_dantzig_wolfe_different()
         lim_ann = BD.annotation(model, lim)
         test_annotation(lim_ann, BD.Master, BD.DantzigWolfe, 1, 1) 
     end
+    return
 end
 
 function test_dantzig_wolfe_identical()
@@ -49,6 +50,35 @@ function test_dantzig_wolfe_identical()
         x_ann = BD.annotation(model, x[1,5])
         @test x_ann == y_ann1
     end
+    return
+end
+
+function dummymodel1()
+    model = BD.BlockModel()
+    A = BD.@axis(A, 1:5)
+    @variable(model, y[1:5] >= 0)
+    @variable(model, z[A, 1:10], Int)
+    @constraint(model, fix[i in 1:5], y[i] == 1)
+    @constraint(model, cov, sum(z[a, i] for a in A, i in 1:10) == 5)
+    @constraint(model, knp[a in A], sum(z[a, i] for i in 1:10) <= 3)
+    BD.@dantzig_wolfe_decomposition(model, dec, A)
+    return model, y, z, fix, cov, knp, dec
+end
+
+function test_dummy_model_decompositions()
+    @testset "Model with Arrays" begin
+        model, y, z, fix, cov, knp, dec = dummymodel1()
+        try 
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+        fix_ann = BD.annotation(model, fix[1])
+        test_annotation(fix_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        y_ann = BD.annotation(model, y[1])
+        test_annotation(y_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+    end
+    return
 end
 
 function test_dantzig_wolfe_diffidentical()
