@@ -14,9 +14,9 @@ function axis_declarations()
     end
 
     @testset "Axis Declaration B" begin
-        @test G[1] == "lorem"
-        @test G[2] == "ipsum"
-        @test G[3] == "dolor"
+        @test B[1] == "lorem"
+        @test B[2] == "ipsum"
+        @test B[3] == "dolor"
     end
 
     @testset "Axis Declaration Vector" begin

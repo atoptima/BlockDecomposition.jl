@@ -14,7 +14,7 @@ function GapToyData(nbjobs::Int, nbmachines::Int)
 end
 
 function generalized_assignement(d::GapData)
-    BD.@axis(Machines, d.machines, lb = 0)
+    BD.@axis(Machines, d.machines)
 
     model = BlockModel()
     @variable(model, x[j in d.jobs, m in Machines], Bin)
@@ -33,7 +33,7 @@ end
 
 # Test pure master variables, constraint without id & variables without id
 function generalized_assignement_penalties(d::GapData)
-    BD.@axis(Machines, d.machines, lb = 0)
+    BD.@axis(Machines, d.machines), #lb = 0)
 
     model = BlockModel()
     @variable(model, x[j in d.jobs, m in Machines], Bin)
@@ -118,7 +118,7 @@ function cutting_stock(d::CsData)
     nb_sheets = d.nb_sheets[1]
     sheet_size = d.sheets_sizes[1]
 
-    BD.@axis(Sheets, 1:nb_sheets, Identical)
+    BD.@axis(Sheets, 1:nb_sheets)#, Identical)
 
     model = BlockModel()
     @variable(model, 0 <= x[i in d.items, s in Sheets] <= d.demands[i], Int)
@@ -138,7 +138,7 @@ end
 
 function cutting_stock_different_sizes(d::CsData)
     @assert length(d.sheet_types) > 1
-    BD.@axis(Sheets[t in d.sheet_types], 1:d.nb_sheets[t], Identical)
+    BD.@axis(SheetTypes, 1:d.sheet_types)#[t in d.sheet_types], 1:d.nb_sheets[t], Identical)
 
     model = BlockModel()
     @variable(model, 0 <= x[t in d.sheet_types, s in Sheets[t], i in d.items] <= d.demands[i], Int)
