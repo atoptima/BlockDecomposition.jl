@@ -9,12 +9,12 @@ mutable struct Tree
     root::AbstractNode
     nb_masters::Int
     nb_subproblems::Int
-    current_uid::Int
+    ann_current_uid::Int
     function Tree(D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
         t = new()
         t.nb_masters = 0
         t.nb_subproblems = 0
-        t.current_uid = 0
+        t.ann_current_uid = 0
         r = Root(t, D, axis)
         t.root = r
         return t
@@ -24,8 +24,8 @@ end
 getroot(t::Tree) = t.root
 
 function generateannotationid(tree)
-    tree.current_uid += 1
-    return tree.current_uid
+    tree.ann_current_uid += 1
+    return tree.ann_current_uid
 end
 
 struct Leaf <: AbstractNode
