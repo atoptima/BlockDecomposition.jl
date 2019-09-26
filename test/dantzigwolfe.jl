@@ -34,7 +34,7 @@ end
 
 function test_dantzig_wolfe_identical()
     @testset "CS" begin
-        d = CsToyData(1, 10)
+        d = CsToyData(3, 10)
         model, x, y, cov, knp, dec = cutting_stock(d)
         try
             JuMP.optimize!(model)
@@ -43,9 +43,7 @@ function test_dantzig_wolfe_identical()
         end
         y_ann1 = BD.annotation(model, y[1])
         test_annotation(y_ann1, BD.DwPricingSp, BD.DantzigWolfe, 0, d.nb_sheets[1])
-        y_ann2 = BD.annotation(model, y[2])
-        @test y_ann2 == y_ann1
-        knp_ann = BD.annotation(model, knp[3])
+        knp_ann = BD.annotation(model, knp[1])
         @test knp_ann == y_ann1
         x_ann = BD.annotation(model, x[1,5])
         @test x_ann == y_ann1
@@ -79,11 +77,4 @@ function test_dummy_model_decompositions()
         test_annotation(y_ann, BD.Master, BD.DantzigWolfe, 1, 1)
     end
     return
-end
-
-function test_dantzig_wolfe_diffidentical()
-    #d = CsToyData(3, 15)
-    #m = cutting_stock_different_sizes(d)
-    #@show BD.gettree(m)
-    #JuMP.optimize!(m) # Does not work yet because JuMP creates SparseArray to store cstrs & vars
 end

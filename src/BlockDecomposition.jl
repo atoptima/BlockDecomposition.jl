@@ -13,6 +13,7 @@ export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 include("axis.jl")
 include("annotations.jl")
 include("tree.jl")
+include("formulations.jl")
 include("decomposition.jl")
 
 function BlockModel(args...; kw...)

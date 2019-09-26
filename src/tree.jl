@@ -1,8 +1,6 @@
 # When you call a decomposition macro, it returns a pointer to the Decomposition
 # node from where the decomposition has been performed.
 # A decomposition node should contains : the master & a vector of subproblems
-const AxisContainer = Union{Axis, JuMP.Containers.DenseAxisArray{<: Axis}}
-
 abstract type AbstractNode end
 
 mutable struct Tree
@@ -10,7 +8,7 @@ mutable struct Tree
     nb_masters::Int
     nb_subproblems::Int
     ann_current_uid::Int
-    function Tree(D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
+    function Tree(D::Type{<: Decomposition}, axis::Axis)
         t = new()
         t.nb_masters = 0
         t.nb_subproblems = 0
@@ -35,24 +33,22 @@ struct Leaf <: AbstractNode
     depth::Int
     # Edge id from parent
     edge_id::Tuple{Any}
-    multiple_children::Bool
 end
 
-struct Node{A} <: AbstractNode where {A <: AxisContainer}
+struct Node <: AbstractNode 
     tree::Tree
     parent::AbstractNode
     depth::Int
     problem::Annotation
     # Link from parent
     edge_id::Tuple{Any}
-    multiple_children::Bool
     # Information about the decomposition
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
-    axis::A
+    axis::Axis
 end
 
-struct Root{A} <: AbstractNode where {A <: AxisContainer}
+struct Root <: AbstractNode
     tree::Tree
     depth::Int
     # Current Node
@@ -60,7 +56,7 @@ struct Root{A} <: AbstractNode where {A <: AxisContainer}
     # Children (decomposition performed on this node)
     master::Annotation
     subproblems::Dict{Any, AbstractNode}
-    axis::A
+    axis::Axis
 end
 
 annotation(n::Leaf) = n.problem
@@ -73,12 +69,12 @@ subproblems(n::Node) = n.subproblems
 
 getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
-function Root(t::Tree, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
-    uid = generateannotationid(t)
+function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis)
+    uid = generateannotationid(tree)
     problem = OriginalAnnotation()
-    master = MasterAnnotation(uid, D)
+    master = MasterAnnotation(tree, D)
     empty_dict = Dict{Any, AbstractNode}()
-    return Root(t, 0, problem, master, empty_dict, axis)
+    return Root(tree, 0, problem, master, empty_dict, axis)
 end
 
 Base.getindex(n::Union{Node,Root}, i::Int) = n.subproblems[i]
@@ -86,7 +82,7 @@ Base.getindex(n::AbstractNode, r::UnitRange) = [n.subproblems[i] for i in r]
 
 has_tree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
-function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
+function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
     if !has_tree(model)
         tree = Tree(D, axis)
         model.ext[:decomposition_tree] = tree
@@ -96,7 +92,7 @@ function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, a
     end
     return
 end
-set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer} = return
+set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis) = return
 gettree(n::AbstractNode) = n.tree
 gettree(m::JuMP.Model) = m.ext[:decomposition_tree]
 get_depth(n::AbstractNode) = n.depth
@@ -133,53 +129,32 @@ end
 
 function create_leaf!(n::AbstractNode, id, a::Annotation)
     edge_val = (id,)
-    if identical(n.axis)
-        edge_val = (Colon(),) #n.axis.container
-    end
-    leaf = Leaf(gettree(n), n, a, get_depth(n) + 1, edge_val, identical(n.axis))
-    get!(n.subproblems, id, leaf)
+    leaf = Leaf(gettree(n), n, a, get_depth(n) + 1, edge_val)
+    n.subproblems[id] = leaf
+    return
 end
 
-function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
+function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
     set_decomposition_tree!(m, D, axis)
     return gettree(m).root
 end
 
-function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::A) where {A <: AxisContainer}
+function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
     error("BlockDecomposition does not support nested decomposition yet.") 
     return
 end
 
-function register_subproblem!(n::AbstractNode, id, P::Type{<: Subproblem}, D::Type{<: Decomposition}, min_mult::Int, max_mult::Int)
-    tree = gettree(n)
-    uid = generateannotationid(tree)
-    annotation = Annotation(uid, 0, P, D, id, min_mult, max_mult, nothing)
-    create_leaf!(n, id, annotation)
-end
-
 function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<: Subproblem}, D::Type{<: Decomposition})
-    if identical(axis)
-        register_subproblem!(n, 1, P, D, 0, length(axis))
-    else
-        for a in axis
-            register_subproblem!(n, a, P, D, lowermultiplicity(axis), 1)
-        end
+    tree = gettree(n)
+    for a in axis
+        create_leaf!(n, a, Annotation(tree, P, D, a))
     end
-end
-
-function register_subproblems!(n::AbstractNode, axis::JuMP.Containers.DenseAxisArray, P::Type{<: Subproblem}, D::Type{<: Decomposition})
-    for multi_index in Base.product(axis.axes...)
-        register_multi_index_subproblems!(n, multi_index, axis[multi_index...], P, D)
-    end
+    return
 end
 
 function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, axis::Axis, P::Type{<: Subproblem}, D::Type{<: Decomposition})
-    if identical(axis)
-        register_subproblem!(n, (multi_index..., 1), P, D, 0, length(axis))
-    else
-        for a in axis
-            register_subproblem!(n, (multi_index..., a), P, D, lowermultiplicity(axis), 1)
-        end
+    for a in axis
+        register_subproblem!(n, (multi_index..., a), P, D, 1, 1)
     end
 end
 
@@ -220,20 +195,5 @@ function Base.show(io::IO, r::Root)
         show(io, annotation(node))
         println(io, " ")
     end
-    return
-end
-
-function Base.show(io::IO, a::Annotation)
-    print(io, "Annotation(")
-    print(io, getformulation(a))
-    print(io, ", ")
-    print(io, getdecomposition(a))
-    print(io, ", ")
-    print(io, getminmultiplicity(a))
-    print(io, " <= multiplicity <= ")
-    print(io, getmaxmultiplicity(a))
-    print(io, ", ")
-    print(io, getid(a))
-    print(io, ")")
     return
 end
