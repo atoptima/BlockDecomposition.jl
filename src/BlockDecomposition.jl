@@ -7,7 +7,7 @@ import MathOptInterface.Utilities
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 
-export BlockModel, annotation
+export BlockModel, annotation, specify!, getmaster, getsubproblems
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 
 include("axis.jl")
