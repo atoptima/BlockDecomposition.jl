@@ -1,29 +1,3 @@
-# For debug purpose : must be improved
-# function print_annotations(model::JuMP.Model)
-#     for (key, obj_ref) in model.obj_dict
-#         if applicable(iterate, obj_ref)
-#             for obj in obj_ref
-#                 a = nothing
-#                 if typeof(obj) <: JuMP.ConstraintRef
-#                     a = MOI.get(model, ConstraintDecomposition(), obj)
-#                 else
-#                     a = MOI.get(model, VariableDecomposition(), obj)
-#                 end
-#                 println("$obj = $a")
-#             end
-#         else
-#             a = nothing
-#             obj = obj_ref
-#             if typeof(obj) <: JuMP.ConstraintRef
-#                 a = MOI.get(model, ConstraintDecomposition(), obj)
-#             else
-#                 a = MOI.get(model, VariableDecomposition(), obj)
-#             end
-#             println("$obj = $a")
-#         end
-#     end
-#     return
-# end
 assignsolver(n::AbstractNode, f::Function) = n.master.optimizer_builder = f
 assignsolver(n::Leaf, f::Function) = n.problem.optimizer_builder = f
 function assignsolver(nodes::Vector{<:AbstractNode}, f::Function)
@@ -132,28 +106,35 @@ function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecompositio
     return
 end
 
-function MOI.set(dest::MOIU.UniversalFallback, attribute::VariableDecomposition, 
-        vi::MOI.VariableIndex, annotation::Annotation)
+function MOI.set(
+    dest::MOIU.UniversalFallback, attribute::VariableDecomposition, 
+    vi::MOI.VariableIndex, ann::Annotation
+)
     if !haskey(dest.varattr, attribute)
         dest.varattr[attribute] = Dict{MOI.VariableIndex, Tuple}()
     end
-    dest.varattr[attribute][vi] = annotation
+    dest.varattr[attribute][vi] = ann
     return
 end
 
-function MOI.set(dest::MOIU.UniversalFallback, attribute::DecompositionTree,
-        tree)
+function MOI.set(
+    dest::MOIU.UniversalFallback, attribute::DecompositionTree, tree::Tree
+)
     dest.modattr[attribute] = tree
     return
 end
 
-function MOI.get(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
-        ci::MOI.ConstraintIndex)
+function MOI.get(
+    dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
+    ci::MOI.ConstraintIndex
+)
     return dest.conattr[attribute][ci]
 end
 
-function MOI.get(dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
-        vi::MOI.VariableIndex)
+function MOI.get(
+    dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
+    vi::MOI.VariableIndex
+)
     return dest.varattr[attribute][vi]
 end
 
@@ -161,26 +142,32 @@ function MOI.get(dest::MOIU.UniversalFallback, attribute::DecompositionTree)
     return dest.modattr[attribute]
 end
 
-function setannotations!(model::JuMP.Model, objref::AbstractArray, indices::Tuple, 
-        annotation::Annotation)
+function setannotations!(
+    model::JuMP.Model, objref::AbstractArray, indices::Tuple, ann::Annotation
+)
     if applicable(iterate, objref[indices...])
         for obj in objref[indices...]
-            setannotation!(model, obj, annotation)
+            setannotation!(model, obj, ann)
         end
     else
         obj = objref[indices...]
-        setannotation!(model, obj, annotation)
+        setannotation!(model, obj, ann)
     end
+    return
 end
 
-function setannotations!(model::JuMP.Model, objref::JuMP.ConstraintRef, _, 
-        annotation::Annotation)
-    setannotation!(model, objref, annotation)
+function setannotations!(
+    model::JuMP.Model, objref::JuMP.ConstraintRef, _, ann::Annotation
+)
+    setannotation!(model, objref, ann)
+    return
 end
 
-function setannotations!(model::JuMP.Model, objref::JuMP.VariableRef, _, 
-        annotation::Annotation)
-    setannotation!(model, objref, annotation)
+function setannotations!(
+    model::JuMP.Model, objref::JuMP.VariableRef, _, ann::Annotation
+)
+    setannotation!(model, objref, ann)
+    return
 end
 
 settree!(model::JuMP.Model, tree) = MOI.set(model, DecompositionTree(), tree)

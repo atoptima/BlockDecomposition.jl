@@ -9,8 +9,8 @@ function test_annotation(ann::BD.Annotation, F::Type{<:BD.Formulation},
         D::Type{<:BD.Decomposition}, minmult, maxmult)
     @test BD.getformulation(ann) == F
     @test BD.getdecomposition(ann) == D
-    @test BD.getminmultiplicity(ann) == minmult
-    @test BD.getmaxmultiplicity(ann) == maxmult
+    @test BD.getlowermultiplicity(ann) == minmult
+    @test BD.getuppermultiplicity(ann) == maxmult
     return
 end
 
@@ -23,7 +23,6 @@ include("assignsolver.jl")
 axis_declarations()
 test_dantzig_wolfe_different()
 test_dantzig_wolfe_identical()
-test_dantzig_wolfe_diffidentical()
 test_dummy_model_decompositions()
 test_benders()
 test_assignsolver()
