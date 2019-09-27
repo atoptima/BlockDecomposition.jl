@@ -1,6 +1,6 @@
 name = "BlockDecomposition"
 uuid = "6cde8614-403a-11e9-12f1-c10d0f0caca0"
-authors = ["Guillaume Marques, Vitor Nesello, François Vanderbeck"]
+authors = ["Guillaume Marques", "Vitor Nesello", "François Vanderbeck"]
 version = "1.0.0"
 
 [deps]
