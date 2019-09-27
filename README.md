@@ -4,3 +4,5 @@
 [![codecov](https://codecov.io/gh/atoptima/BlockDecomposition.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/atoptima/BlockDecomposition.jl)
 
 BlockDecomposition.jl is a package providing features to take advantage of the shape of block structured problem; in other words, problems on which Dantzig-Wolfe decomposition or Benders decomposition can be applied.
+
+[Example for Dantzig-Wolfe decomposition](https://atoptima.github.io/Coluna.jl/latest/start/)
