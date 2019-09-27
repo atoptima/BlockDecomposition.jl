@@ -29,7 +29,7 @@ function generalized_assignement(d::GapData)
     @dantzig_wolfe_decomposition(model, decomposition, Machines)
     master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
-    specify!(subproblems, lm = 0, um = 1)
+    specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
 
     return model, x, cov, knp, decomposition
 end
@@ -53,9 +53,11 @@ function generalized_assignement_penalties(d::GapData)
         sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in Machines) + 1000 * z)
 
     @dantzig_wolfe_decomposition(model, decomposition, Machines)
+
+    master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
-    for sp in subproblems
-        specify!(sp, lm = 0, um = 1)
+    for m in Machines
+        specify!(subproblems[m], lower_multiplicity = 0, upper_multiplicity = 1)
     end
 
     @show master
@@ -141,7 +143,8 @@ function cutting_stock(d::CsData)
     @dantzig_wolfe_decomposition(model, dec, SheetTypes)
     subproblems = getsubproblems(dec)
 
-    specify!(subproblems, lm = 0, um = d.nb_sheets)
+    specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = d.nb_sheets)
+    
     return model, x, y, cov, knp, dec
 end
 

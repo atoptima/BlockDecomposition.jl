@@ -46,13 +46,19 @@ function _specify!(sp::SubproblemForm, lm::Real, um::Real)
     return
 end
 
-function specify!(sp::SubproblemForm; lm::Real = 1, um::Real = 1)
-    _specify!(sp, lm, um)
+function specify!(
+    sp::SubproblemForm; lower_multiplicity::Real = 1, 
+    upper_multiplicity::Real = 1
+)
+    _specify!(sp, lower_multiplicity, upper_multiplicity)
     return
 end
 
 # No broadcast over keyword arguments.
-function specify!(sp::Vector{SubproblemForm}; lm = 1, um = 1)
-    _specify!.(sp, lm, um)
+function specify!(
+    sp::Vector{SubproblemForm}; lower_multiplicity = 1, 
+    upper_multiplicity = 1
+)
+    _specify!.(sp, lower_multiplicity, upper_multiplicity)
     return
 end
