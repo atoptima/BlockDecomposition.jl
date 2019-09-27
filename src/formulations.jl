@@ -14,12 +14,17 @@ function Base.show(io::IO, m::MasterForm)
     return
 end
 
-struct SubproblemForm
+struct SubproblemForm{T}
+    axisname::Symbol
+    axisval::T
     annotation::Annotation
 end
 
-SubproblemForm(n::Node) = SubproblemForm(n.master)
-SubproblemForm(n::Leaf) = SubproblemForm(n.problem)
+#SubproblemForm(n::Node) = SubproblemForm(n.master) # TODO : nested decomposition
+function SubproblemForm(n::Leaf)
+    name = n.parent.axis.name
+    return SubproblemForm(name, n.edge_id, n.problem)
+end
 
 function getsubproblems(decomposition::AbstractNode)
     subproblems = SubproblemForm[]
@@ -32,9 +37,11 @@ end
 
 function Base.show(io::IO, m::SubproblemForm)
     ann = m.annotation
+    name = m.axisname
+    val = m.axisval
     lm = getlowermultiplicity(ann)
     um = getuppermultiplicity(ann)
-    print(io, "Subproblem formulation contains :")
+    print(io, "Subproblem formulation for $(name) = $(val) contains :")
     print(io, "\t $(lm) <= multiplicity <= $(um)")
     print(io, "\n")
     return

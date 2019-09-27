@@ -11,6 +11,8 @@ function test_annotation(ann::BD.Annotation, F::Type{<:BD.Formulation},
     @test BD.getdecomposition(ann) == D
     @test BD.getlowermultiplicity(ann) == minmult
     @test BD.getuppermultiplicity(ann) == maxmult
+    id = BD.getid(ann)
+    @test repr(ann) == "Annotation($(F), $(D), lm = $(float(minmult)), um = $(float(maxmult)), id = $(id))"
     return
 end
 

@@ -56,13 +56,9 @@ function generalized_assignement_penalties(d::GapData)
 
     master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
-    for m in Machines
-        specify!(subproblems[m], lower_multiplicity = 0, upper_multiplicity = 1)
+    for (i,m) in enumerate(Machines)
+        specify!(subproblems[i], lower_multiplicity = 0, upper_multiplicity = 1)
     end
-
-    @show master
-    @show subproblems[1]
-
     return model, x, y, z, cov, knp, lim, decomposition
 end
 
@@ -144,7 +140,7 @@ function cutting_stock(d::CsData)
     subproblems = getsubproblems(dec)
 
     specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = d.nb_sheets)
-    
+
     return model, x, y, cov, knp, dec
 end
 

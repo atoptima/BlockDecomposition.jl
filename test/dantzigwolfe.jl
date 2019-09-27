@@ -1,7 +1,7 @@
 function test_dantzig_wolfe_different()
     d = GapToyData(5, 2)
     @testset "Classic GAP" begin
-        model, x, cov, knp, dwd = generalized_assignement(d)
+        model, x, cov, knp, dec = generalized_assignement(d)
         try
             JuMP.optimize!(model)
         catch e
@@ -13,6 +13,14 @@ function test_dantzig_wolfe_different()
         test_annotation(x_ann, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
         knp_ann = BD.annotation(model, knp[1])
         test_annotation(knp_ann, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+
+        master = getmaster(dec)
+        @test repr(master) == "Master formulation.\n"
+
+        subproblems = getsubproblems(dec)
+        @test repr(subproblems[1]) == "Subproblem formulation for Machines = 1 contains :\t 0.0 <= multiplicity <= 1.0\n"
+
+        @test gettree(model) == gettree(dec)
     end
 
     @testset "GAP + Pure master vars + Constr & Var without index" begin
