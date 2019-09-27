@@ -3,9 +3,9 @@ import Base.iterate
 import Base.getindex
 import Base.lastindex
 
-struct Axis{T, V <: AbstractArray{T}}
+struct Axis{T, A <: AbstractArray{T}}
     name::Symbol # Name of the axis (as declared in the macro)
-    container::V
+    container::A
 end
 
 name(axis::Axis) =  axis.name

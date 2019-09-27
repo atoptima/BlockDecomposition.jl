@@ -1,10 +1,10 @@
 function axis_declarations()
-    BD.@axis(A, 3:5)
-    BD.@axis(B, ["lorem", "ipsum", "dolor"])
+    @axis(A, 3:5)
+    @axis(B, ["lorem", "ipsum", "dolor"])
     Vector = [1,2,3]
-    BD.@axis(Vector)
+    @axis(Vector)
     C = [(1,2) (4,1)]
-    BD.@axis(C)
+    @axis(C)
 
     @testset "Axis Declaration A" begin
         @test length(A) == 3
@@ -14,6 +14,7 @@ function axis_declarations()
     end
 
     @testset "Axis Declaration B" begin
+        @test BD.name(B) == :B
         @test B[1] == "lorem"
         @test B[2] == "ipsum"
         @test B[3] == "dolor"

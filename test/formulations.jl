@@ -14,7 +14,7 @@ function GapToyData(nbjobs::Int, nbmachines::Int)
 end
 
 function generalized_assignement(d::GapData)
-    BD.@axis(Machines, d.machines)
+    @axis(Machines, d.machines)
 
     model = BlockModel()
     @variable(model, x[j in d.jobs, m in Machines], Bin)
@@ -26,10 +26,10 @@ function generalized_assignement(d::GapData)
     @objective(model, Min, 
          sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in Machines))
 
-    BD.@dantzig_wolfe_decomposition(model, decomposition, Machines)
-    master = BD.getmaster(decomposition)
-    subproblems = BD.getsubproblems(decomposition)
-    BD.specify!(subproblems, lm = 0, um = 1)
+    @dantzig_wolfe_decomposition(model, decomposition, Machines)
+    master = getmaster(decomposition)
+    subproblems = getsubproblems(decomposition)
+    specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
 
     return model, x, cov, knp, decomposition
 end
@@ -52,10 +52,13 @@ function generalized_assignement_penalties(d::GapData)
     @objective(model, Min, 
         sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in Machines) + 1000 * z)
 
-    BD.@dantzig_wolfe_decomposition(model, decomposition, Machines)
-    subproblems = BD.getsubproblems(decomposition)
-    BD.specify!(subproblems, lm = 0, um = 1)
+    @dantzig_wolfe_decomposition(model, decomposition, Machines)
 
+    master = getmaster(decomposition)
+    subproblems = getsubproblems(decomposition)
+    for (i,m) in enumerate(Machines)
+        specify!(subproblems[i], lower_multiplicity = 0, upper_multiplicity = 1)
+    end
     return model, x, y, z, cov, knp, lim, decomposition
 end
 
@@ -119,7 +122,7 @@ function CsToyData(nbsheettypes::Int, nbitems::Int)
 end
 
 function cutting_stock(d::CsData)
-    BD.@axis(SheetTypes, d.sheet_types)
+    @axis(SheetTypes, d.sheet_types)
 
     model = BlockModel()
     @variable(model, 0 <= x[t in SheetTypes, i in d.items] <= d.demands[i], Int)
@@ -133,10 +136,11 @@ function cutting_stock(d::CsData)
 
     @objective(model, Min, sum(y[t] for t in SheetTypes))
 
-    BD.@dantzig_wolfe_decomposition(model, dec, SheetTypes)
-    subproblems = BD.getsubproblems(dec)
+    @dantzig_wolfe_decomposition(model, dec, SheetTypes)
+    subproblems = getsubproblems(dec)
 
-    BD.specify!(subproblems, lm = 0, um = d.nb_sheets)
+    specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = d.nb_sheets)
+
     return model, x, y, cov, knp, dec
 end
 

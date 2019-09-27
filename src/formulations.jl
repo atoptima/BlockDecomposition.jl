@@ -14,12 +14,17 @@ function Base.show(io::IO, m::MasterForm)
     return
 end
 
-struct SubproblemForm
+struct SubproblemForm{T}
+    axisname::Symbol
+    axisval::T
     annotation::Annotation
 end
 
-SubproblemForm(n::Node) = SubproblemForm(n.master)
-SubproblemForm(n::Leaf) = SubproblemForm(n.problem)
+#SubproblemForm(n::Node) = SubproblemForm(n.master) # TODO : nested decomposition
+function SubproblemForm(n::Leaf)
+    name = n.parent.axis.name
+    return SubproblemForm(name, n.edge_id, n.problem)
+end
 
 function getsubproblems(decomposition::AbstractNode)
     subproblems = SubproblemForm[]
@@ -32,9 +37,11 @@ end
 
 function Base.show(io::IO, m::SubproblemForm)
     ann = m.annotation
+    name = m.axisname
+    val = m.axisval
     lm = getlowermultiplicity(ann)
     um = getuppermultiplicity(ann)
-    print(io, "Subproblem formulation contains :")
+    print(io, "Subproblem formulation for $(name) = $(val) contains :")
     print(io, "\t $(lm) <= multiplicity <= $(um)")
     print(io, "\n")
     return
@@ -46,13 +53,19 @@ function _specify!(sp::SubproblemForm, lm::Real, um::Real)
     return
 end
 
-function specify!(sp::SubproblemForm; lm::Real = 1, um::Real = 1)
-    _specify!(sp, lm, um)
+function specify!(
+    sp::SubproblemForm; lower_multiplicity::Real = 1, 
+    upper_multiplicity::Real = 1
+)
+    _specify!(sp, lower_multiplicity, upper_multiplicity)
     return
 end
 
 # No broadcast over keyword arguments.
-function specify!(sp::Vector{SubproblemForm}; lm = 1, um = 1)
-    _specify!.(sp, lm, um)
+function specify!(
+    sp::Vector{SubproblemForm}; lower_multiplicity = 1, 
+    upper_multiplicity = 1
+)
+    _specify!.(sp, lower_multiplicity, upper_multiplicity)
     return
 end

@@ -12,12 +12,4 @@ function test_assignsolver()
         @test BD.getoptimizerbuilder(dwd[1]) == build_sp_moi_optimizer
         @test BD.getoptimizerbuilder(dwd[2]) == build_sp_moi_optimizer
     end
-
-    # @testset "Assign ad-hoc callback" begin
-    #     d = GapToyData(5, 2)
-    #     model, x, cov, knp, dwd = generalized_assignement(d)
-    #     DB.assignsolver(dwd, )
-
-    # end
-
 end

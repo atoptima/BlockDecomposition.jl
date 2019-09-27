@@ -26,54 +26,54 @@ function generateannotationid(tree)
     return tree.ann_current_uid
 end
 
-struct Leaf <: AbstractNode
+struct Leaf{V} <: AbstractNode
     tree::Tree # Keep a ref to Tree because it contains general data
     parent::AbstractNode
     problem::Annotation
     depth::Int
     # Edge id from parent
-    edge_id::Tuple{Any}
+    edge_id::V
 end
 
-struct Node <: AbstractNode 
+struct Node{T,V,A} <: AbstractNode 
     tree::Tree
     parent::AbstractNode
     depth::Int
     problem::Annotation
     # Link from parent
-    edge_id::Tuple{Any}
+    edge_id::T
     # Information about the decomposition
     master::Annotation
-    subproblems::Dict{Any, AbstractNode}
-    axis::Axis
+    subproblems::Dict{V, AbstractNode}
+    axis::Axis{V,A}
 end
 
-struct Root <: AbstractNode
+struct Root{T,A} <: AbstractNode
     tree::Tree
     depth::Int
     # Current Node
     problem::Annotation
     # Children (decomposition performed on this node)
     master::Annotation
-    subproblems::Dict{Any, AbstractNode}
-    axis::Axis
+    subproblems::Dict{T, AbstractNode}
+    axis::Axis{T,A}
 end
 
 annotation(n::Leaf) = n.problem
 annotation(n::Root) = n.master # TODO : check if true in nested decomposition
-annotation(n::Node) = n.master # TODO : check if true in nested decomposition
+#annotation(n::Node) = n.master # TODO : check if true in nested decomposition
 
 subproblems(n::Leaf) = Dict{Any, AbstractNode}()
 subproblems(n::Root) = n.subproblems
-subproblems(n::Node) = n.subproblems
+#subproblems(n::Node) = n.subproblems
 
 getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
-function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis)
+function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{T,A}) where {T,A}
     uid = generateannotationid(tree)
     problem = OriginalAnnotation()
     master = MasterAnnotation(tree, D)
-    empty_dict = Dict{Any, AbstractNode}()
+    empty_dict = Dict{T, AbstractNode}()
     return Root(tree, 0, problem, master, empty_dict, axis)
 end
 
@@ -128,8 +128,7 @@ function get_elems_of_axes_in_node(n::AbstractNode)
 end
 
 function create_leaf!(n::AbstractNode, id, a::Annotation)
-    edge_val = (id,)
-    leaf = Leaf(gettree(n), n, a, get_depth(n) + 1, edge_val)
+    leaf = Leaf(gettree(n), n, a, get_depth(n) + 1, id)
     n.subproblems[id] = leaf
     return
 end
