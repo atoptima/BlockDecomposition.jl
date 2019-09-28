@@ -2,12 +2,29 @@ import Base.length
 import Base.iterate
 import Base.getindex
 import Base.lastindex
+import Base.to_index
+import Base.hash
+import Base.isequal
 
 struct AxisId{Name, T}
     indice::T
 end
 
-#Base.show(io::IO, i::AxisId) = show(io, i.indice)
+function indice(i::AxisId{Name,T})::T where {Name, T}
+    return i.indice
+end
+
+Base.hash(i::AxisId, h::UInt) = hash(i.indice, h)
+
+# Permit the access to the entry of an array using an AxisId.
+Base.to_index(i::AxisId) = i.indice
+
+# Allow matching of AxisId key using the value of field indice (dict.jl:289)
+Base.isequal(i, j::AxisId) = isequal(i, j.indice)
+
+iterate(i::AxisId) = (i, nothing)
+iterate(i::AxisId, ::Any) = nothing
+Base.show(io::IO, i::AxisId) = show(io, i.indice)
 
 struct Axis{Name, T}
     name::Symbol
@@ -23,22 +40,10 @@ function Axis(name::Symbol, container::A) where {T, A <: AbstractArray{T}}
 end
 
 name(axis::Axis) =  axis.name
-function iterate(axis::Axis)
-    iter_result = iterate(axis.container)
-    (iter_result === nothing) && return nothing
-    (element, state) = iter_result
-    return element.indice, state
-end
-
-function iterate(axis::Axis, state)
-    iter_result = iterate(axis.container, state)
-    (iter_result === nothing) && return nothing
-    (element, state) = iter_result
-    return element.indice, state
-end
-
+iterate(axis::Axis) = iterate(axis.container)
+iterate(axis::Axis, state) = iterate(axis.container, state)
 length(axis::Axis) = length(axis.container)
-getindex(axis::Axis, elements) = getindex(axis.container, elements).indice
+getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
 
 function _generate_axis(name, container)

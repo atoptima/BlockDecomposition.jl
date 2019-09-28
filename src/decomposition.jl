@@ -145,6 +145,7 @@ end
 function setannotations!(
     model::JuMP.Model, objref::AbstractArray, indices::Tuple, ann::Annotation
 )
+    @show indices
     if applicable(iterate, objref[indices...])
         for obj in objref[indices...]
             setannotation!(model, obj, ann)

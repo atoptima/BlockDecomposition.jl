@@ -44,7 +44,7 @@ struct Node{N,V,T} <: AbstractNode
     edge_id::T
     # Information about the decomposition
     master::Annotation
-    subproblems::Dict{V, AbstractNode}
+    subproblems::Dict{AxisId{N,V}, AbstractNode}
     axis::Axis{N,V}
 end
 
@@ -55,7 +55,7 @@ struct Root{N,T} <: AbstractNode
     problem::Annotation
     # Children (decomposition performed on this node)
     master::Annotation
-    subproblems::Dict{T, AbstractNode}
+    subproblems::Dict{AxisId{N,T}, AbstractNode}
     axis::Axis{N,T}
 end
 
@@ -73,12 +73,9 @@ function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{N,T}) where {N,T
     uid = generateannotationid(tree)
     problem = OriginalAnnotation()
     master = MasterAnnotation(tree, D)
-    empty_dict = Dict{T, AbstractNode}()
+    empty_dict = Dict{AxisId{N,T}, AbstractNode}()
     return Root(tree, 0, problem, master, empty_dict, axis)
 end
-
-Base.getindex(n::Union{Node,Root}, i::Int) = n.subproblems[i]
-Base.getindex(n::AbstractNode, r::UnitRange) = [n.subproblems[i] for i in r]
 
 has_tree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 

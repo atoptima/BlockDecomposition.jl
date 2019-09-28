@@ -9,26 +9,26 @@ function axis_declarations()
     @testset "Axis Declaration A" begin
         @test length(A) == 3
         for (i, a) in enumerate(A)
-            @test a == i + 2
+            @test indice(a) == i + 2
         end
     end
 
     @testset "Axis Declaration B" begin
         @test BD.name(B) == :B
-        @test B[1] == "lorem"
-        @test B[2] == "ipsum"
-        @test B[3] == "dolor"
+        @test indice(B[1]) == "lorem"
+        @test indice(B[2]) == "ipsum"
+        @test indice(B[3]) == "dolor"
     end
 
     @testset "Axis Declaration Vector" begin
-        @test Vector[1] == 1
-        @test Vector[2] == 2
-        @test Vector[3] == 3
+        @test indice(Vector[1]) == 1
+        @test indice(Vector[2]) == 2
+        @test indice(Vector[3]) == 3
         @test typeof(Vector) <: BD.Axis 
     end
 
     @testset "Axis Declaration C" begin
-        @test C[1] == (1,2)
-        @test C[end] == (4,1)
+        @test indice(C[1]) == (1,2)
+        @test indice(C[end]) == (4,1)
     end
 end
