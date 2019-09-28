@@ -23,7 +23,7 @@ function test_dantzig_wolfe_different()
         tree = gettree(model)
         @test gettree(model) == gettree(dec)
 
-        @test repr(tree) == "BlockDecomposition.Tree(Root - Annotation(BlockDecomposition.Master, BlockDecomposition.DantzigWolfe, lm = 1.0, um = 1.0, id = 2) with 2 subproblems :\n\t 2 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 4) \n\t 1 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 3) \n, 0, 0, 4)"
+        @test repr(dec) == "Root - Annotation(BlockDecomposition.Master, BlockDecomposition.DantzigWolfe, lm = 1.0, um = 1.0, id = 2) with 2 subproblems :\n\t 2 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 4) \n\t 1 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 3) \n"
     end
 
     @testset "GAP + Pure master vars + Constr & Var without index" begin
@@ -108,8 +108,11 @@ function test_dummy_model_decompositions()
         catch e
             @test e isa NoOptimizer
         end
-        println("\e[32m end \e[00m")
-        exit()
+        x1_ann = BD.annotation(model, x[1,1,3])
+        test_annotation(x1_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+        x2_ann = BD.annotation(model, x[2,3,4])
+        test_annotation(x2_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+        @test BD.getid(x1_ann) != BD.getid(x2_ann)
     end
     return
 end

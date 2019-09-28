@@ -10,7 +10,11 @@ struct AxisId{Name, T}
     indice::T
 end
 
-function indice(i::AxisId{Name,T})::T where {Name, T}
+function name(i::AxisId{Name,T}) where {Name,T}
+    return Name
+end
+
+function indice(i::AxisId{Name,T})::T where {Name,T}
     return i.indice
 end
 
@@ -20,7 +24,9 @@ Base.hash(i::AxisId, h::UInt) = hash(i.indice, h)
 Base.to_index(i::AxisId) = i.indice
 
 # Allow matching of AxisId key using the value of field indice (dict.jl:289)
-Base.isequal(i, j::AxisId) = isequal(i, j.indice)
+# and vice-versa
+Base.isequal(i::T, j::AxisId{N,T}) where {N,T} = isequal(i, j.indice)
+Base.isequal(i::AxisId{N,T}, j::T) where {N,T} = isequal(i.indice, j)
 
 iterate(i::AxisId) = (i, nothing)
 iterate(i::AxisId, ::Any) = nothing

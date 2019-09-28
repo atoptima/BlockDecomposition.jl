@@ -6,6 +6,7 @@ import MathOptInterface.Utilities
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
+const JC = JuMP.Containers
 
 export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems,
        indice

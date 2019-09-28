@@ -8,6 +8,7 @@ mutable struct Tree
     nb_masters::Int
     nb_subproblems::Int
     ann_current_uid::Int
+    decomposition_axes::Dict{Symbol, Axis}
     function Tree(D::Type{<: Decomposition}, axis::Axis)
         t = new()
         t.nb_masters = 0
@@ -15,6 +16,7 @@ mutable struct Tree
         t.ann_current_uid = 0
         r = Root(t, D, axis)
         t.root = r
+        t.decomposition_axes = Dict{Symbol, Axis}(name(axis) => axis)
         return t
     end
 end
