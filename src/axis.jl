@@ -3,16 +3,42 @@ import Base.iterate
 import Base.getindex
 import Base.lastindex
 
-struct Axis{T, A <: AbstractArray{T}}
-    name::Symbol # Name of the axis (as declared in the macro)
-    container::A
+struct AxisId{Name, T}
+    indice::T
+end
+
+#Base.show(io::IO, i::AxisId) = show(io, i.indice)
+
+struct Axis{Name, T}
+    name::Symbol
+    container::Vector{AxisId{Name, T}}
+end
+
+function Axis(name::Symbol, container::A) where {T, A <: AbstractArray{T}}
+    indices = AxisId{name, T}[]
+    for val in container
+        push!(indices, AxisId{name, T}(val))
+    end
+    return Axis{name, T}(name, indices)
 end
 
 name(axis::Axis) =  axis.name
-iterate(axis::Axis) = iterate(axis.container)
-iterate(axis::Axis, state) = iterate(axis.container, state)
+function iterate(axis::Axis)
+    iter_result = iterate(axis.container)
+    (iter_result === nothing) && return nothing
+    (element, state) = iter_result
+    return element.indice, state
+end
+
+function iterate(axis::Axis, state)
+    iter_result = iterate(axis.container, state)
+    (iter_result === nothing) && return nothing
+    (element, state) = iter_result
+    return element.indice, state
+end
+
 length(axis::Axis) = length(axis.container)
-getindex(axis::Axis, elements) = getindex(axis.container, elements)
+getindex(axis::Axis, elements) = getindex(axis.container, elements).indice
 lastindex(axis::Axis) = lastindex(axis.container)
 
 function _generate_axis(name, container)

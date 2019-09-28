@@ -35,7 +35,7 @@ struct Leaf{V} <: AbstractNode
     edge_id::V
 end
 
-struct Node{T,V,A} <: AbstractNode 
+struct Node{N,V,T} <: AbstractNode 
     tree::Tree
     parent::AbstractNode
     depth::Int
@@ -45,10 +45,10 @@ struct Node{T,V,A} <: AbstractNode
     # Information about the decomposition
     master::Annotation
     subproblems::Dict{V, AbstractNode}
-    axis::Axis{V,A}
+    axis::Axis{N,V}
 end
 
-struct Root{T,A} <: AbstractNode
+struct Root{N,T} <: AbstractNode
     tree::Tree
     depth::Int
     # Current Node
@@ -56,7 +56,7 @@ struct Root{T,A} <: AbstractNode
     # Children (decomposition performed on this node)
     master::Annotation
     subproblems::Dict{T, AbstractNode}
-    axis::Axis{T,A}
+    axis::Axis{N,T}
 end
 
 annotation(n::Leaf) = n.problem
@@ -69,7 +69,7 @@ subproblems(n::Root) = n.subproblems
 
 getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
-function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{T,A}) where {T,A}
+function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{N,T}) where {N,T}
     uid = generateannotationid(tree)
     problem = OriginalAnnotation()
     master = MasterAnnotation(tree, D)
