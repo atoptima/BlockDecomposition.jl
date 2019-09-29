@@ -32,6 +32,7 @@ getoptimizerbuilder(a::Annotation) = a.optimizer_builder
 
 setlowermultiplicity!(a::Annotation, lm::Real) = a.lower_multiplicity = lm 
 setuppermultiplicity!(a::Annotation, um::Real) = a.upper_multiplicity = um
+setoptimizerbuilder!(a::Annotation, f::Function) = a.optimizer_builder = f
 
 OriginalAnnotation() = Annotation(0, 0, Original, NoDecomposition, 0, 1.0, 1.0, nothing)
 

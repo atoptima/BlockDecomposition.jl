@@ -1,4 +1,6 @@
-struct MasterForm
+abstract type AbstractForm end
+
+struct MasterForm <: AbstractForm
     annotation::Annotation
 end
 
@@ -14,7 +16,7 @@ function Base.show(io::IO, m::MasterForm)
     return
 end
 
-struct SubproblemForm{T}
+struct SubproblemForm{T} <: AbstractForm
     axisname::Symbol
     axisval::T
     annotation::Annotation
@@ -67,5 +69,10 @@ function specify!(
     upper_multiplicity = 1
 )
     _specify!.(sp, lower_multiplicity, upper_multiplicity)
+    return
+end
+
+function assignsolver!(form::AbstractForm, func::Function)
+    setoptimizerbuilder!(form.annotation, func)
     return
 end
