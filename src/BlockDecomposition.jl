@@ -6,9 +6,11 @@ import MathOptInterface.Utilities
 
 const MOI = MathOptInterface
 const MOIU = MOI.Utilities
+const JC = JuMP.Containers
 
-export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems
-export assignsolver!
+export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems,
+       indice, assignsolver!
+
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 
 include("axis.jl")

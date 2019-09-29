@@ -6,12 +6,14 @@ which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
-    # First, we retrieve the axis associtated to each JuMP object.
+    # Link to the tree
+    tree = gettree(model)
+    # First, we retrieve the axes associtated to each JuMP object.
     # If there is no axis linked to a JuMP object, elements of the object are
     # in the master.
     obj_axes = Vector{Tuple{Symbol, Vector{Axis}}}()
     for (key, jump_obj) in model.obj_dict
-        dec_axes = look_for_dec_axis(jump_obj)
+        dec_axes = look_for_dec_axis(tree, jump_obj)
         push!(obj_axes, (key, dec_axes))
     end
     
@@ -27,7 +29,7 @@ function register_decomposition(model::JuMP.Model)
         for (key, dec_axes) in obj_axes
             if length(dec_axes) == length(elem_axes_in_partition)
                 obj_ref = model.obj_dict[key]
-                indices = get_indices_of_obj_in_partition(obj_ref, dec_axes, elem_axes_in_partition)
+                indices = get_indices_of_obj_in_partition(obj_ref, elem_axes_in_partition)
                 setannotations!(model, obj_ref, indices, annotation(dec_node))
             end
             (length(dec_axes) < length(elem_axes_in_partition)) && break
@@ -36,11 +38,9 @@ function register_decomposition(model::JuMP.Model)
     return
 end
 
-function look_for_dec_axis(container::JuMP.Containers.SparseAxisArray)
-    error("BlockDecomposition cannot look for axes into SparseAxisArray.")   
-end
-
-function look_for_dec_axis(container::JuMP.Containers.DenseAxisArray)::Vector{Axis}
+# look_for_dec_axis checks if some indices of the JuMP object are defined on
+# axes.
+function look_for_dec_axis(tree::Tree, container::JC.DenseAxisArray)::Vector{Axis}
     dec_axes = Vector{Axis}()
     for axis in container.axes
         if typeof(axis) <: Axis
@@ -50,22 +50,38 @@ function look_for_dec_axis(container::JuMP.Containers.DenseAxisArray)::Vector{Ax
     return dec_axes
 end
 
-look_for_dec_axis(constr::JuMP.ConstraintRef) = Vector{Axis}()
-look_for_dec_axis(var::JuMP.VariableRef) = Vector{Axis}()
-look_for_dec_axis(vars::Array{<:JuMP.VariableRef, N}) where N =  Vector{Axis}()
-look_for_dec_axis(constrs::Array{<:JuMP.ConstraintRef, N}) where N =  Vector{Axis}()
+function look_for_dec_axis(tree::Tree, container::JC.SparseAxisArray)::Vector{Axis}
+    dec_axes = Vector{Axis}()
+    container_keys = collect(keys(container.data))
+    for indice in container_keys[1]
+        if indice isa AxisId
+            push!(dec_axes, tree.decomposition_axes[name(indice)])
+        end
+    end
+    return dec_axes
+end
 
-function get_indices_of_obj_in_partition(
-    obj_ref::JuMP.Containers.DenseAxisArray, dec_axes, dec_axes_val
-)
+look_for_dec_axis(tree, constr::JuMP.ConstraintRef) = Vector{Axis}()
+look_for_dec_axis(tree, var::JuMP.VariableRef) = Vector{Axis}()
+look_for_dec_axis(tree, vars::Array{<:JuMP.VariableRef, N}) where N =  Vector{Axis}()
+look_for_dec_axis(tree, constrs::Array{<:JuMP.ConstraintRef, N}) where N =  Vector{Axis}()
+
+# get_indices_of_obj_in_partition returns the indices of the elements of the
+# JuMP object that are in the parition defined by dec_axes_val.
+# Consider an axis named :A with AxisId values [1,2,3,4]. 
+# Assume we want the indices of the variable x[a in A, b in 1:5] that are in the
+# partition defined by dec_axes_val = Dict(:A => 4) 
+# get_indices_of_obj_in_partition returns the tuple (4,:) meaning that variables
+# x[4,:] are in the subproblem with indice 4.
+function get_indices_of_obj_in_partition(obj_ref::JC.DenseAxisArray, dec_axes_val)
     tuple = ()
     for obj_axis in obj_ref.axes
         found_dec_axes = false
         if typeof(obj_axis) <: Axis
-            for dec_axis in dec_axes 
-                if obj_axis.name == dec_axis.name
+            for (axis_name, value) in dec_axes_val
+                if obj_axis.name == axis_name
                     found_dec_axes = true
-                    tuple = (tuple..., dec_axes_val[dec_axis.name]...)
+                    tuple = (tuple..., value...)
                 end
             end
         end
@@ -76,10 +92,36 @@ function get_indices_of_obj_in_partition(
     return tuple
 end
 
-get_indices_of_obj_in_partition(obj_ref::JuMP.ConstraintRef, _, _) = ()
-get_indices_of_obj_in_partition(obj_ref::JuMP.VariableRef, _, _) = ()
-get_indices_of_obj_in_partition(obj_ref::Array{<:JuMP.VariableRef, N}, _, _) where N = ntuple(i -> Colon(), N)
-get_indices_of_obj_in_partition(obj_ref::Array{<:JuMP.ConstraintRef, N}, _, _) where N = ntuple(i -> Colon(), N)
+function get_indices_of_obj_in_partition(
+    obj_ref::JC.SparseAxisArray, dec_axes_val
+)
+    indices = Tuple[]
+    container_keys = collect(keys(obj_ref.data))
+    for key in container_keys
+        keep = true
+        axis_found = 0
+        for indice in key
+            if indice isa AxisId
+                for (axis_name, value) in dec_axes_val
+                    if name(indice) == axis_name && indice != value
+                        keep = false
+                    else
+                        axis_found += 1
+                    end
+                end
+            end
+            if keep && axis_found == length(dec_axes_val)
+                push!(indices, key)
+            end
+        end
+    end
+    return indices
+end
+
+get_indices_of_obj_in_partition(obj_ref::JuMP.ConstraintRef, _) = ()
+get_indices_of_obj_in_partition(obj_ref::JuMP.VariableRef, _) = ()
+get_indices_of_obj_in_partition(obj_ref::Array{<:JuMP.VariableRef, N}, _) where N = ntuple(i -> Colon(), N)
+get_indices_of_obj_in_partition(obj_ref::Array{<:JuMP.ConstraintRef, N}, _) where N = ntuple(i -> Colon(), N)
 
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
@@ -141,6 +183,17 @@ function setannotations!(
             setannotation!(model, obj, ann)
         end
     else
+        obj = objref[indices...]
+        setannotation!(model, obj, ann)
+    end
+    return
+end
+
+function setannotations!(
+    model::JuMP.Model, objref::AbstractArray, indices_set::Vector{Tuple}, 
+    ann::Annotation
+)
+    for indices in indices_set
         obj = objref[indices...]
         setannotation!(model, obj, ann)
     end
