@@ -8,6 +8,7 @@ mutable struct Tree
     nb_masters::Int
     nb_subproblems::Int
     ann_current_uid::Int
+    decomposition_axes::Dict{Symbol, Axis}
     function Tree(D::Type{<: Decomposition}, axis::Axis)
         t = new()
         t.nb_masters = 0
@@ -15,6 +16,7 @@ mutable struct Tree
         t.ann_current_uid = 0
         r = Root(t, D, axis)
         t.root = r
+        t.decomposition_axes = Dict{Symbol, Axis}(name(axis) => axis)
         return t
     end
 end
@@ -35,7 +37,7 @@ struct Leaf{V} <: AbstractNode
     edge_id::V
 end
 
-struct Node{T,V,A} <: AbstractNode 
+struct Node{N,V,T} <: AbstractNode 
     tree::Tree
     parent::AbstractNode
     depth::Int
@@ -44,19 +46,19 @@ struct Node{T,V,A} <: AbstractNode
     edge_id::T
     # Information about the decomposition
     master::Annotation
-    subproblems::Dict{V, AbstractNode}
-    axis::Axis{V,A}
+    subproblems::Dict{AxisId{N,V}, AbstractNode}
+    axis::Axis{N,V}
 end
 
-struct Root{T,A} <: AbstractNode
+struct Root{N,T} <: AbstractNode
     tree::Tree
     depth::Int
     # Current Node
     problem::Annotation
     # Children (decomposition performed on this node)
     master::Annotation
-    subproblems::Dict{T, AbstractNode}
-    axis::Axis{T,A}
+    subproblems::Dict{AxisId{N,T}, AbstractNode}
+    axis::Axis{N,T}
 end
 
 annotation(n::Leaf) = n.problem
@@ -69,16 +71,13 @@ subproblems(n::Root) = n.subproblems
 
 getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
-function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{T,A}) where {T,A}
+function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{N,T}) where {N,T}
     uid = generateannotationid(tree)
     problem = OriginalAnnotation()
     master = MasterAnnotation(tree, D)
-    empty_dict = Dict{T, AbstractNode}()
+    empty_dict = Dict{AxisId{N,T}, AbstractNode}()
     return Root(tree, 0, problem, master, empty_dict, axis)
 end
-
-Base.getindex(n::Union{Node,Root}, i::Int) = n.subproblems[i]
-Base.getindex(n::AbstractNode, r::UnitRange) = [n.subproblems[i] for i in r]
 
 has_tree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
