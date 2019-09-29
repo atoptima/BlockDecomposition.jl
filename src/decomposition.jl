@@ -47,6 +47,8 @@ function register_decomposition(model::JuMP.Model)
     return
 end
 
+# look_for_dec_axis checks if some indices of the JuMP object are defined on
+# axes.
 function look_for_dec_axis(tree::Tree, container::JC.DenseAxisArray)::Vector{Axis}
     dec_axes = Vector{Axis}()
     for axis in container.axes
@@ -73,6 +75,13 @@ look_for_dec_axis(tree, var::JuMP.VariableRef) = Vector{Axis}()
 look_for_dec_axis(tree, vars::Array{<:JuMP.VariableRef, N}) where N =  Vector{Axis}()
 look_for_dec_axis(tree, constrs::Array{<:JuMP.ConstraintRef, N}) where N =  Vector{Axis}()
 
+# get_indices_of_obj_in_partition returns the indices of the elements of the
+# JuMP object that are in the parition defined by dec_axes_val.
+# Consider an axis named :A with AxisId values [1,2,3,4]. 
+# Assume we want the indices of the variable x[a in A, b in 1:5] that are in the
+# partition defined by dec_axes_val = Dict(:A => 4) 
+# get_indices_of_obj_in_partition returns the tuple (4,:) meaning that variables
+# x[4,:] are in the subproblem with indice 4.
 function get_indices_of_obj_in_partition(obj_ref::JC.DenseAxisArray, dec_axes_val)
     tuple = ()
     for obj_axis in obj_ref.axes
