@@ -1,12 +1,3 @@
-assignsolver(n::AbstractNode, f::Function) = n.master.optimizer_builder = f
-assignsolver(n::Leaf, f::Function) = n.problem.optimizer_builder = f
-function assignsolver(nodes::Vector{<:AbstractNode}, f::Function)
-    for n in nodes
-        assignsolver(n, f)
-    end
-    return f
-end
-
 """
     register_decomposition(model)
 

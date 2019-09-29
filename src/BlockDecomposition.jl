@@ -9,7 +9,8 @@ const MOIU = MOI.Utilities
 const JC = JuMP.Containers
 
 export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems,
-       indice
+       indice, assignsolver!
+
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 
 include("axis.jl")
