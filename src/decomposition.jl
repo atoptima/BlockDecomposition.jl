@@ -161,18 +161,25 @@ function MOI.get(
     dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
     ci::MOI.ConstraintIndex
 )
-    return dest.conattr[attribute][ci]
+    conattr = get(dest.conattr, attribute, nothing)
+    conattr == nothing && return nothing
+    val = get(conattr, ci, nothing)
+    return val
 end
 
 function MOI.get(
     dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     vi::MOI.VariableIndex
 )
-    return dest.varattr[attribute][vi]
+    varattr = get(dest.varattr, attribute, nothing)
+    varattr == nothing && return nothing
+    val = get(varattr, vi, nothing)
+    return val
 end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::DecompositionTree)
-    return dest.modattr[attribute]
+    modattr = get(dest.modattr, attribute, nothing)
+    return modattr
 end
 
 function setannotations!(
