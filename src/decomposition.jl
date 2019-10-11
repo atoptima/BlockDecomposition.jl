@@ -53,9 +53,11 @@ end
 function look_for_dec_axis(tree::Tree, container::JC.SparseAxisArray)::Vector{Axis}
     dec_axes = Vector{Axis}()
     container_keys = collect(keys(container.data))
-    for indice in container_keys[1]
-        if indice isa AxisId
-            push!(dec_axes, tree.decomposition_axes[name(indice)])
+    if length(container_keys) > 0
+        for indice in container_keys[1]
+            if indice isa AxisId
+                push!(dec_axes, tree.decomposition_axes[name(indice)])
+            end
         end
     end
     return dec_axes

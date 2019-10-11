@@ -26,8 +26,24 @@ function test_dantzig_wolfe_different()
         @test repr(dec) == "Root - Annotation(BlockDecomposition.Master, BlockDecomposition.DantzigWolfe, lm = 1.0, um = 1.0, id = 2) with 2 subproblems :\n\t 2 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 4) \n\t 1 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 3) \n"
     end
 
+    d = GapToyData(30, 10)
     @testset "GAP + Pure master vars + Constr & Var without index" begin
         model, x, y, z, cov, knp, lim, dwd = generalized_assignement_penalties(d)
+        try
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+        y_ann = BD.annotation(model, y[1])
+        test_annotation(y_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        z_ann = BD.annotation(model, z)
+        test_annotation(z_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        lim_ann = BD.annotation(model, lim)
+        test_annotation(lim_ann, BD.Master, BD.DantzigWolfe, 1, 1) 
+    end
+
+    @testset "GAP + Pure master vars + Dense Axis + Conditional constraint" begin
+        model, x, y, z, cov, knp, lim, cond, cond2, cond3, dwd = generalized_assignement_conditional_constraint(d)
         try
             JuMP.optimize!(model)
         catch e
