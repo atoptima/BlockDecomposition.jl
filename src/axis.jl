@@ -5,6 +5,8 @@ import Base.lastindex
 import Base.to_index
 import Base.hash
 import Base.isequal
+import Base.isless
+import Base.==
 
 struct AxisId{Name, T}
     indice::T
@@ -27,6 +29,10 @@ Base.to_index(i::AxisId) = i.indice
 # and vice-versa
 Base.isequal(i::T, j::AxisId{N,T}) where {N,T} = isequal(i, j.indice)
 Base.isequal(i::AxisId{N,T}, j::T) where {N,T} = isequal(i.indice, j)
+Base.isless(i::T, j::AxisId{N,T}) where {N,T} = isless(i, j.indice)
+Base.isless(i::AxisId{N,T}, j::T) where {N,T} = isless(i.indice, j)
+Base.:(==)(i::T, j::AxisId{N,T}) where {N,T} = i == j.indice
+Base.:(==)(i::AxisId{N,T}, j::T) where {N,T} = i.indice == j
 
 iterate(i::AxisId) = (i, nothing)
 iterate(i::AxisId, ::Any) = nothing
