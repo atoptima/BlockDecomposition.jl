@@ -42,8 +42,8 @@ function test_dantzig_wolfe_different()
         test_annotation(lim_ann, BD.Master, BD.DantzigWolfe, 1, 1) 
     end
 
-    @testset "GAP + Pure master vars + Dense Axis + Conditional constraint" begin
-        model, x, y, z, cov, knp, lim, cond, cond2, cond3, dwd = generalized_assignement_conditional_constraint(d)
+    @testset "GAP + Pure master vars + Conditional constraint" begin
+        model, x, y, z, cov, knp, lim, cond1, cond2, cond3, dwd = generalized_assignement_conditional_constraint(d)
         try
             JuMP.optimize!(model)
         catch e
@@ -55,6 +55,15 @@ function test_dantzig_wolfe_different()
         test_annotation(z_ann, BD.Master, BD.DantzigWolfe, 1, 1)
         lim_ann = BD.annotation(model, lim)
         test_annotation(lim_ann, BD.Master, BD.DantzigWolfe, 1, 1) 
+        cond1_annotation = BD.annotation(model, cond1[1])
+        test_annotation(cond1_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+        cond1_annotation.axis_index_value == 1
+        cond2_annotation = BD.annotation(model, cond2[2])
+        test_annotation(cond2_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+        cond2_annotation.axis_index_value == 2
+        cond3_annotation = BD.annotation(model, cond3[4])
+        test_annotation(cond3_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+        cond3_annotation.axis_index_value == 4
     end
     return
 end

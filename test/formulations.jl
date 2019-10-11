@@ -76,7 +76,7 @@ function generalized_assignement_conditional_constraint(d::GapData)
     @constraint(model, knp[m in Machines], 
         sum(d.weights[j, m] * x[j, m] for j in d.jobs) <= d.capacities[m])
 
-    @constraint(model, cond[m in Machines; m < 3],
+    @constraint(model, cond1[m in Machines; m < 3],
         sum(d.weights[j, m] * x[j, m] for j in d.jobs) >= 0.3 * d.capacities[m])
 
     @constraint(model, cond2[m in Machines; m in [2,4]],
@@ -95,7 +95,7 @@ function generalized_assignement_conditional_constraint(d::GapData)
     for (i,m) in enumerate(Machines)
         specify!(subproblems[i], lower_multiplicity = 0, upper_multiplicity = 1)
     end
-    return model, x, y, z, cov, knp, lim, cond, cond2, cond3, decomposition
+    return model, x, y, z, cov, knp, lim, cond1, cond2, cond3, decomposition
 end
 
 
