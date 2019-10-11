@@ -1,7 +1,7 @@
 name = "BlockDecomposition"
 uuid = "6cde8614-403a-11e9-12f1-c10d0f0caca0"
 authors = ["Guillaume Marques", "Vitor Nesello", "François Vanderbeck"]
-version = "1.0.0"
+version = "1.1.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
