@@ -2,8 +2,10 @@
 All notable changes to `BlockDecomposition` will be documented in this file.
 
 ## 1.1.0
-### Unreleased
-- Support of `JuMP.Containers.SparseAxisArray` [#8](https://github.com/atoptima/BlockDecomposition.jl/pull/8)
+### 11/10/2019
+- Support of `JuMP.Containers.SparseAxisArray`
+- Fix of setsolver!
+- Fix conditional variables and constraints
   
 ## 1.0.0
 ### 27/09/2019
