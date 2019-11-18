@@ -27,11 +27,7 @@ end
 
 function optimize!(m::JuMP.Model)
     register_decomposition(m)
-    if JuMP.mode(m) != JuMP.DIRECT && MOIU.state(JuMP.backend(m)) == MOIU.NO_OPTIMIZER
-        throw(JuMP.NoOptimizer())
-    end
-    MOI.optimize!(JuMP.backend(m))
-    return
+    return JuMP.optimize!(m, ignore_optimize_hook = true)
 end
 
 function annotation(model::JuMP.Model, objref::JuMP.ConstraintRef)
