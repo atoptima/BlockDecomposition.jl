@@ -98,6 +98,45 @@ function generalized_assignement_conditional_constraint(d::GapData)
     return model, x, y, z, cov, knp, lim, cond1, cond2, cond3, decomposition
 end
 
+# test pure master variables, constraint without id, variables without id, & decomposition over only subsets of decomposition axes
+function generalized_assignment_centralized_machines(d::GapData)
+    BD.@axis(DecMachines, d.machines[1:5])
+    CenMachines = d.machines[6:10]
+    Machines = vcat(DecMachines.container, CenMachines)
+
+    model = BlockModel()
+    @variable(model, x[j in d.jobs, m in Machines], Bin)
+    @variable(model, y[j in d.jobs], Bin) # variables without id
+    @variable(model, z, Int) # pure master variable
+
+    @constraint(model, cov[j in d.jobs], sum(x[j, m] for m in Machines) + y[j] >= 1)
+    @constraint(model, lim, sum(y[j] for j in d.jobs)  <= 3 + z) # constraint without id
+
+    @constraint(model, knp[m in Machines], 
+        sum(d.weights[j, m] * x[j, m] for j in d.jobs) <= d.capacities[m])
+
+    @constraint(model, cond1[m in Machines; m < 3],
+        sum(d.weights[j, m] * x[j, m] for j in d.jobs) >= 0.3 * d.capacities[m])
+
+    @constraint(model, cond2[m in Machines; m in [2,4]],
+        sum(d.weights[j, m] * x[j, m] for j in d.jobs) >= 0.35 * d.capacities[m])
+
+    @constraint(model, cond3[m in Machines; m > 3],
+        sum(d.weights[j, m] * x[j, m] for j in d.jobs) >= 0.4 * d.capacities[m])
+
+    @objective(model, Min, 
+        sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in Machines) + 1000 * z)
+
+    @dantzig_wolfe_decomposition(model, decomposition, DecMachines)
+
+    master = getmaster(decomposition)
+    subproblems = getsubproblems(decomposition)
+    for (i,m) in enumerate(DecMachines)
+        specify!(subproblems[i], lower_multiplicity = 0, upper_multiplicity = 1)
+    end
+    return model, x, y, z, cov, knp, lim, cond1, cond2, cond3, decomposition
+end
+
 
 struct LsData
     nbitems

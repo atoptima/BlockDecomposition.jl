@@ -14,7 +14,7 @@ mutable struct Tree
         t.nb_masters = 0
         t.nb_subproblems = 0
         t.ann_current_uid = 0
-        r = Root(t, D, axis)
+        r = Root(t, D, axis)                  # initialize root (with node uid 1) calling the extra outer constructor
         t.root = r
         t.decomposition_axes = Dict{Symbol, Axis}(name(axis) => axis)
         return t
@@ -28,6 +28,7 @@ function generateannotationid(tree)
     return tree.ann_current_uid
 end
 
+# leaves are terminals of branches
 struct Leaf{V} <: AbstractNode
     tree::Tree # Keep a ref to Tree because it contains general data
     parent::AbstractNode
@@ -71,6 +72,7 @@ subproblems(n::Root) = n.subproblems
 
 getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
+# extra outer Root constructor
 function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{N,T}) where {N,T}
     uid = generateannotationid(tree)
     problem = OriginalAnnotation()
@@ -83,9 +85,9 @@ has_tree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
 function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
     if !has_tree(model)
-        tree = Tree(D, axis)
-        model.ext[:decomposition_tree] = tree
-        settree!(model, tree)
+        tree = Tree(D, axis)                      # initialize tree
+        model.ext[:decomposition_tree] = tree     # register tree in JuMP model
+        settree!(model, tree)                     # register tree in MOI model?
     else
         error("Cannot decompose twice at the same level.")
     end
@@ -103,15 +105,15 @@ function getnodes(tree::Tree)
     queue = Queue{AbstractNode}()
     enqueue!(queue, tree.root)
     while length(queue) > 0
-        node = dequeue!(queue)
+        node = dequeue!(queue)                  
         for (key, child) in node.subproblems
-            if typeof(child) <: Leaf
+            if typeof(child) <: Leaf            # if child node is a leaf, append it to the nodes list
                 push!(vec_nodes, child)
             else
-                enqueue!(queue, child)
+                enqueue!(queue, child)          # otherwise insert the node into the queue for further node search
             end
         end
-        push!(vec_nodes, node)
+        push!(vec_nodes, node)                  # append the parent node to the nodes list
     end
     return vec_nodes
 end
@@ -133,8 +135,8 @@ function create_leaf!(n::AbstractNode, id, a::Annotation)
 end
 
 function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
-    set_decomposition_tree!(m, D, axis)
-    return gettree(m).root
+    set_decomposition_tree!(m, D, axis)     # register the tree in the model
+    return gettree(m).root                  # return the root node of the new tree
 end
 
 function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
@@ -144,7 +146,7 @@ end
 
 function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<: Subproblem}, D::Type{<: Decomposition})
     tree = gettree(n)
-    for a in axis
+    for a in axis                                       # iterate over AxisIds i.e. subproblems
         create_leaf!(n, a, Annotation(tree, P, D, a))
     end
     return
@@ -162,7 +164,7 @@ macro dantzig_wolfe_decomposition(args...)
     end
     node, name, axis = args
     dw_exp = quote 
-        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)
+        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)                                # initialize a tree for the current root node
         BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe)
     end
     return esc(dw_exp)
