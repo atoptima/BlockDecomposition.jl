@@ -72,7 +72,6 @@ subproblems(n::Root) = n.subproblems
 
 getedgeidfromparent(node::Union{Node,Leaf}) = node.edge_id
 
-
 # extra outer Root constructor
 function Root(tree::Tree, D::Type{<: Decomposition}, axis::Axis{N,T}) where {N,T}
     uid = generateannotationid(tree)

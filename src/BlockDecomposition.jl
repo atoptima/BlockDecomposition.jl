@@ -26,7 +26,7 @@ function BlockModel(args...; kw...)
 end
 
 function optimize!(m::JuMP.Model)
-    register_decomposition(m)
+    new_register_decomposition(m)
     return JuMP.optimize!(m, ignore_optimize_hook = true)
 end
 

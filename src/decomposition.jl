@@ -1,3 +1,76 @@
+_getrootmasterannotation(tree) = tree.root.master
+
+# Should return the annotation corresponding to the vector of AxisId.
+# Example :
+# if axisids = [], the element goes in the master
+# if axisids = [AxisIds(1)], the element goes in the subproblem with index 1
+# todo : support nesting decomposition
+function _getannotation(tree, axisids::Vector{AxisId})
+    length(axisids) == 0 && return _getrootmasterannotation(tree)
+    length(axisids) > 1 && error("BlockDecomposition does not support nested decomposition yet.")
+    return tree.root.subproblems[axisids[1]].problem
+end
+
+function _annotate_elements!(model::JuMP.Model, container::JC.DenseAxisArray, tree)
+    axisids = Vector{AxisId}()
+    indice_sets = collect(Iterators.product(container.axes...))
+
+    for indice_set in indice_sets # iterate over all the indice sets of the JuMP object
+        for indice in indice_set # iterate over all indices of the current indice set
+            if indice isa AxisId
+                push!(axisids, indice)
+            end
+        end
+        ann = _getannotation(tree, axisids)
+        setannotation!(model, container[indice_set...], ann)
+        empty!(axisids)
+    end
+    return
+end
+
+function _annotate_elements!(model::JuMP.Model, container::JC.SparseAxisArray, tree)
+    axisids = Vector{AxisId}()
+    container_keys = collect(keys(container.data))
+    for key in container_keys # iterate over all indices of the container
+        for indice in key
+            if indice isa AxisId
+                push!(axisids, indice)
+            end
+        end
+        ann = _getannotation(tree, axisids)
+        setannotation!(model, container[key...], ann)
+        empty!(axisids)
+    end
+    return
+end
+
+function _annotate_elements!(model::JuMP.Model, container::JuMP.ConstraintRef, tree)
+    setannotation!(model, container, _getrootmasterannotation(tree))
+    return
+end
+
+function _annotate_elements!(model::JuMP.Model, container::JuMP.VariableRef, tree)
+    setannotation!(model, container, _getrootmasterannotation(tree))
+    return
+end
+
+function _annotate_elements!(model::JuMP.Model, container::AbstractArray, tree)
+    for element in container
+        setannotation!(model, element, _getrootmasterannotation(tree))
+    end
+    return
+end
+
+
+function new_register_decomposition(model::JuMP.Model)
+    # Link to the tree
+    tree = gettree(model)
+    for (key, jump_obj) in model.obj_dict
+        _annotate_elements!(model, jump_obj, tree)
+    end
+    return
+end
+
 """
     register_decomposition(model)
 
@@ -6,8 +79,6 @@ which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
-    # Link to the tree
-    tree = gettree(model)
     # First, we retrieve the decomposition axes associated to each JuMP object.
     # If there is no axis linked to a JuMP object, elements of the object are
     # in the master.
@@ -22,21 +93,23 @@ function register_decomposition(model::JuMP.Model)
     # over them.
     sort!(obj_axes, by = e -> length(e[2]), rev = true)
 
-    # sort subproblems by depth in composition tree
+    # sort subproblems by depth in decomposition tree
     dec_nodes = getnodes(gettree(model))
     sort!(dec_nodes, by = n -> get_depth(n), rev = true)
 
     # associate JuMP objects to subproblems
     # annotate all JuMP objects with their association to master or subproblems
     for dec_node in dec_nodes
-
+        println("\e[31m dec_node = $dec_node \e[00m")
         # get for all decomposition axes of the current node their current indices
         elem_axes_in_partition = get_elems_of_axes_in_node(dec_node)
-
-        for (key, dec_axes) in obj_axes                                                         # iterate through all JuMP objects
-            if length(dec_axes) == length(elem_axes_in_partition)                               # check if subproblem is indexed over as many decomposition axes as JuMP object
-                obj_ref = model.obj_dict[key]                                                   # get reference to JuMP object
+        for (key, dec_axes) in obj_axes # iterate through all JuMP objects
+            println("\e[32m JuMP object is $key \e[00m")
+            if length(dec_axes) == length(elem_axes_in_partition) # check if subproblem is indexed over as many decomposition axes as JuMP object
+                println("\e[33m \t indexed \e[00m")
+                obj_ref = model.obj_dict[key] # get reference to JuMP object
                 indices = get_indices_of_obj_in_partition(obj_ref, elem_axes_in_partition)
+                println("\e[34m \t indices = $indices \e[00m")
                 setannotations!(model, obj_ref, indices, annotation(dec_node))
             end
             (length(dec_axes) < length(elem_axes_in_partition)) && break
@@ -57,7 +130,6 @@ function look_for_dec_axis(tree::Tree, container::JC.DenseAxisArray)::Vector{Axi
     # iterate over all index sets of the object
     for axis in container.axes
         length(axis) == 0 && error("Empty JuMP objects currently unsupported: Open an issue at https://github.com/atoptima/BlockDecomposition.jl")
-
         # iterate over all indices of the current index set
         for indice in axis
           if indice isa AxisId
@@ -104,16 +176,13 @@ look_for_dec_axis(tree, constrs::Array{<:JuMP.ConstraintRef, N}) where N =  Vect
 # get_indices_of_obj_in_partition returns the tuple (4,:) meaning that variables
 # x[4,:] are in the subproblem with indice 4.
 function get_indices_of_obj_in_partition(obj_ref::JC.DenseAxisArray, dec_axes_val)
-
     indices = Tuple[]
 
     # create an iterable collection of all possible combinations of the JuMP object indices (indice sets)
     indice_sets = collect(Iterators.product(obj_ref.axes...))
 
-    for indice_set in indice_sets       # iterate over all the indice sets of the JuMP object
-
-        for indice in indice_set           # iterate over all indices of the current indice set
-
+    for indice_set in indice_sets # iterate over all the indice sets of the JuMP object
+        for indice in indice_set # iterate over all indices of the current indice set
             # add the current indice set if the one indice is an AxisID and it is contained in a decomposition axis of the current node
             if indice isa AxisId && name(indice) in keys(dec_axes_val) && indice == dec_axes_val[name(indice)]
                 push!(indices, indice_set)
@@ -122,7 +191,6 @@ function get_indices_of_obj_in_partition(obj_ref::JC.DenseAxisArray, dec_axes_va
         end
     end
     return indices
-
 end
 
 function get_indices_of_obj_in_partition(
@@ -133,11 +201,11 @@ function get_indices_of_obj_in_partition(
     for key in container_keys
         keep = true
         axis_found = 0
-        for indice in key           # iterate over all indices of the current index set
+        for indice in key # iterate over all indices of the current index set
             if indice isa AxisId
-                for (axis_name, value) in dec_axes_val                # iterate over all subproblem decomposition axes
-                    if name(indice) == axis_name && indice != value   # check if both JuMP object and subproblem are indexed over current axis, but their indices do not match
-                        keep = false                                  # in that case the indice is not kept
+                for (axis_name, value) in dec_axes_val # iterate over all subproblem decomposition axes
+                    if name(indice) == axis_name && indice != value # check if both JuMP object and subproblem are indexed over current axis, but their indices do not match
+                        keep = false # in that case the indice is not kept
                     else
                         axis_found += 1
                     end
@@ -195,7 +263,7 @@ function MOI.get(
     ci::MOI.ConstraintIndex
 )
     conattr = get(dest.conattr, attribute, nothing)
-    conattr == nothing && return nothing
+    conattr === nothing && return nothing
     val = get(conattr, ci, nothing)
     return val
 end
@@ -205,7 +273,7 @@ function MOI.get(
     vi::MOI.VariableIndex
 )
     varattr = get(dest.varattr, attribute, nothing)
-    varattr == nothing && return nothing
+    varattr === nothing && return nothing
     val = get(varattr, vi, nothing)
     return val
 end
