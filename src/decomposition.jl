@@ -38,25 +38,47 @@ function register_decomposition(model::JuMP.Model)
     return
 end
 
-# look_for_dec_axis checks if some indices of the JuMP object are defined on
-# axes.
+
+"""
+    look_for_dec_axis(tree::Tree, container::JC.DenseAxisArray)
+
+This function checks for all index sets of a JuMP DenseAxisArray, if any indices of the set are part of a decomposition axis and returns an array containing those decomposition axes (empty if JuMP object is not defined over any decomposition axis).
+"""
 function look_for_dec_axis(tree::Tree, container::JC.DenseAxisArray)::Vector{Axis}
     dec_axes = Vector{Axis}()
+
+    # iterate over all index sets of the object
     for axis in container.axes
-        if typeof(axis) <: Axis
-            push!(dec_axes, axis)
+        length(axis) == 0 && error("Empty JuMP objects currently unsupported: Open an issue at https://github.com/atoptima/BlockDecomposition.jl")
+
+        # iterate over all indices of the current index set
+        for indice in axis
+          if indice isa AxisId
+            push!(dec_axes, tree.decomposition_axes[name(indice)])
+            break   # add axis only once to array
+          end
         end
+
     end
     return dec_axes
 end
 
+
+"""
+    look_for_dec_axis(tree::Tree, container::JC.SparseAxisArray)
+
+This function checks if any indices of the JuMP SparseAxisArray are part of decomposition axes and returns an array containing those decomposition axes (empty if JuMP object is not defined over any decomposition axis).
+"""
 function look_for_dec_axis(tree::Tree, container::JC.SparseAxisArray)::Vector{Axis}
     dec_axes = Vector{Axis}()
-    container_keys = collect(keys(container.data))
-    length(container_keys) == 0 && error("Unsupported : Open an issue at https://github.com/atoptima/BlockDecomposition.jl")
-    for indice in container_keys[1]
-        if indice isa AxisId
-            push!(dec_axes, tree.decomposition_axes[name(indice)])
+    container_keys = collect(keys(container.data)) # get indices; as SparseAxisArrays are dictionaries it returns an array of tuples
+    length(container_keys) == 0 && error("Empty JuMP objects currently unsupported: Open an issue at https://github.com/atoptima/BlockDecomposition.jl")
+
+    # iterate over all indices of the JuMP object
+    for indice in container_keys  # indice holds a tuple, the actual indice is contained in the first element of the tuple
+        if indice[1] isa AxisId   
+            push!(dec_axes, tree.decomposition_axes[name(indice[1])])
+            break   # add axis only once to array
         end
     end
     return dec_axes
@@ -75,22 +97,25 @@ look_for_dec_axis(tree, constrs::Array{<:JuMP.ConstraintRef, N}) where N =  Vect
 # get_indices_of_obj_in_partition returns the tuple (4,:) meaning that variables
 # x[4,:] are in the subproblem with indice 4.
 function get_indices_of_obj_in_partition(obj_ref::JC.DenseAxisArray, dec_axes_val)
-    tuple = ()
-    for obj_axis in obj_ref.axes
-        found_dec_axes = false
-        if typeof(obj_axis) <: Axis
-            for (axis_name, value) in dec_axes_val
-                if obj_axis.name == axis_name
-                    found_dec_axes = true
-                    tuple = (tuple..., value...)
-                end
+
+    indices = Tuple[]
+
+    # create an iterable collection of all possible combinations of the JuMP object indices (indice sets)
+    indice_sets = collect(Iterators.product(obj_ref.axes...))
+
+    for indice_set in indice_sets       # iterate over all the indice sets of the JuMP object
+
+        for indice in indice_set           # iterate over all indices of the current indice set
+
+            # add the current indice set if the one indice is an AxisID and it is contained in a decomposition axis of the current node
+            if indice isa AxisId && name(indice) in keys(dec_axes_val) && indice == dec_axes_val[name(indice)]
+                push!(indices, indice_set)
+                break   # not required to check other indices anymore
             end
         end
-        if !found_dec_axes
-            tuple = (tuple..., :)
-        end
     end
-    return tuple
+    return indices
+
 end
 
 function get_indices_of_obj_in_partition(
