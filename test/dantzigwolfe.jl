@@ -65,6 +65,51 @@ function test_dantzig_wolfe_different()
         test_annotation(cond3_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
         cond3_annotation.axis_index_value == 4
     end
+
+    @testset "GAP + Pure master vars + Conditional constraint + Subproblems for subsets" begin
+        model, x, y, z, cov, knp, lim, cond1, cond2, cond3, dwd = generalized_assignment_centralized_machines(d)
+        try
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+        # variables without id
+        y_ann = BD.annotation(model, y[1])
+        test_annotation(y_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+
+        # pure master variable
+        z_ann = BD.annotation(model, z)
+        test_annotation(z_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+
+        # constraint without id
+        lim_ann = BD.annotation(model, lim)
+        test_annotation(lim_ann, BD.Master, BD.DantzigWolfe, 1, 1) 
+
+        # conditional constraints
+        cond1_annotation = BD.annotation(model, cond1[1])
+        test_annotation(cond1_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+        cond1_annotation.axis_index_value == 1
+        cond2_annotation = BD.annotation(model, cond2[2])
+        test_annotation(cond2_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+        cond2_annotation.axis_index_value == 2
+        cond3_annotation = BD.annotation(model, cond3[6])
+        test_annotation(cond3_annotation, BD.Master, BD.DantzigWolfe, 1, 1)
+        cond3_annotation.axis_index_value == 4
+
+        # variable of master
+        cen_var_ann = BD.annotation(model, x[1,6])
+        test_annotation(cen_var_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        # variable of subproblem
+        dec_var_ann = BD.annotation(model, x[1,1])
+        test_annotation(dec_var_ann, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+        # constraints of master
+        cen_cstr_ann = BD.annotation(model, knp[6])
+        test_annotation(cen_cstr_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        # constraints of subproblem
+        dec_cstr_ann = BD.annotation(model, knp[1])
+        test_annotation(dec_cstr_ann, BD.DwPricingSp, BD.DantzigWolfe, 0, 1)
+
+    end
     return
 end
 
