@@ -7,6 +7,7 @@ import Base.hash
 import Base.isequal
 import Base.isless
 import Base.==
+import Base.vcat
 
 struct AxisId{Name, T}
     indice::T
@@ -57,6 +58,7 @@ iterate(axis::Axis, state) = iterate(axis.container, state)
 length(axis::Axis) = length(axis.container)
 getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
+vcat(A::BlockDecomposition.Axis, B::AbstractArray) = vcat(A.container, B)
 
 function _generate_axis(name, container)
     sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
