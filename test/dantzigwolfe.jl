@@ -184,5 +184,17 @@ function test_dummy_model_decompositions()
         test_annotation(x2_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
         @test BD.getid(x1_ann) != BD.getid(x2_ann)
     end
+
+    @testset "Model with objective bounds" begin
+        model, y, z, fix, cov, knp, dec = dummymodel1()
+        BD.objectiveprimalbound!(model, 1234.0)
+        try 
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+        @test MOI.get(model, BD.ObjectivePrimalBound()) == 1234.0
+        @test MOI.get(model, BD.ObjectiveDualBound()) === nothing
+    end
     return
 end
