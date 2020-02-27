@@ -1,6 +1,6 @@
 module BlockDecomposition
 
-using JuMP, DataStructures, MathOptInterface
+using JuMP, MathOptInterface
 import MathOptInterface
 import MathOptInterface.Utilities
 
