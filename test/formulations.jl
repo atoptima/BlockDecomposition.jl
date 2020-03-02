@@ -29,7 +29,7 @@ function generalized_assignement(d::GapData)
     @dantzig_wolfe_decomposition(model, decomposition, Machines)
     master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
-    specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
+    specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
 
     return model, x, cov, knp, decomposition
 end
@@ -215,7 +215,9 @@ function cutting_stock(d::CsData)
     @dantzig_wolfe_decomposition(model, dec, SheetTypes)
     subproblems = getsubproblems(dec)
 
-    specify!(subproblems, lower_multiplicity = 0, upper_multiplicity = d.nb_sheets)
+    for s in SheetTypes
+        specify!(subproblems[s], lower_multiplicity = 0, upper_multiplicity = d.nb_sheets[s])
+    end
 
     return model, x, y, cov, knp, dec
 end

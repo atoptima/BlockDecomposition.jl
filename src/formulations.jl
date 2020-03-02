@@ -49,30 +49,27 @@ function Base.show(io::IO, m::SubproblemForm)
     return
 end
 
-function _specify!(sp::SubproblemForm, lm::Real, um::Real)
+function _specify!(sp::SubproblemForm, lm::Real, um::Real, ::Nothing)
     setlowermultiplicity!(sp.annotation, lm)
     setuppermultiplicity!(sp.annotation, um)
     return
 end
 
+function _specify!(sp::SubproblemForm, lm::Real, um::Real, opt::Type{<:MOI.AbstractOptimizer})
+    _specify!(sp, lm, um, opt())    
+end
+
+function _specify!(sp::SubproblemForm, lm::Real, um::Real, optbuilder::Function)
+    setlowermultiplicity!(sp.annotation, lm)
+    setuppermultiplicity!(sp.annotation, um)
+    setoptimizerbuilder!(sp.annotation, optbuilder)
+    return
+end
+
 function specify!(
     sp::SubproblemForm; lower_multiplicity::Real = 1, 
-    upper_multiplicity::Real = 1
+    upper_multiplicity::Real = 1, solver::Union{Nothing, Function, Type{<:MOI.AbstractOptimizer}} = nothing
 )
-    _specify!(sp, lower_multiplicity, upper_multiplicity)
-    return
-end
-
-# No broadcast over keyword arguments.
-function specify!(
-    sp::Vector{SubproblemForm}; lower_multiplicity = 1, 
-    upper_multiplicity = 1
-)
-    _specify!.(sp, lower_multiplicity, upper_multiplicity)
-    return
-end
-
-function assignsolver!(form::AbstractForm, func::Function)
-    setoptimizerbuilder!(form.annotation, func)
+    _specify!(sp, lower_multiplicity, upper_multiplicity, solver)
     return
 end
