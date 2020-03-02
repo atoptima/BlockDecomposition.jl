@@ -5,18 +5,12 @@ abstract type AbstractNode end
 
 mutable struct Tree
     root::AbstractNode
-    nb_masters::Int
-    nb_subproblems::Int
     ann_current_uid::Int
-    decomposition_axes::Dict{Symbol, Axis}
     function Tree(D::Type{<: Decomposition}, axis::Axis)
         t = new()
-        t.nb_masters = 0
-        t.nb_subproblems = 0
         t.ann_current_uid = 0
         r = Root(t, D, axis)                  # initialize root (with node uid 1) calling the extra outer constructor
         t.root = r
-        t.decomposition_axes = Dict{Symbol, Axis}(name(axis) => axis)
         return t
     end
 end
