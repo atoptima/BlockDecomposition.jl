@@ -1,5 +1,4 @@
-build_master_moi_optimizer() = nothing
-build_sp_moi_optimizer() = nothing
+sp_pricing_oracle() = nothing
 
 function test_assignsolver()
 
@@ -8,11 +7,10 @@ function test_assignsolver()
         model, x, cov, knp, dec = generalized_assignement(d)
         master = getmaster(dec)
         subproblems = getsubproblems(dec)
-        assignsolver!(master, build_master_moi_optimizer)
-        for sp in subproblems
-            assignsolver!(sp, build_sp_moi_optimizer)
-        end
-        @test BD.getoptimizerbuilder(master.annotation) == build_master_moi_optimizer
-        @test BD.getoptimizerbuilder(subproblems[1].annotation) == build_sp_moi_optimizer
+
+        specify!.(subproblems, solver = sp_pricing_oracle)
+        @test BD.getoptimizerbuilder(subproblems[1].annotation) == sp_pricing_oracle
+        specify!(subproblems[2], solver = nothing)
+        @test BD.getoptimizerbuilder(subproblems[2].annotation) === nothing
     end
 end

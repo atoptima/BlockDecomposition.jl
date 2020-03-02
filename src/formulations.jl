@@ -49,17 +49,11 @@ function Base.show(io::IO, m::SubproblemForm)
     return
 end
 
-function _specify!(sp::SubproblemForm, lm::Real, um::Real, ::Nothing)
-    setlowermultiplicity!(sp.annotation, lm)
-    setuppermultiplicity!(sp.annotation, um)
-    return
-end
-
 function _specify!(sp::SubproblemForm, lm::Real, um::Real, opt::Type{<:MOI.AbstractOptimizer})
     _specify!(sp, lm, um, opt())    
 end
 
-function _specify!(sp::SubproblemForm, lm::Real, um::Real, optbuilder::Function)
+function _specify!(sp::SubproblemForm, lm::Real, um::Real, optbuilder::Union{Nothing,Function})
     setlowermultiplicity!(sp.annotation, lm)
     setuppermultiplicity!(sp.annotation, um)
     setoptimizerbuilder!(sp.annotation, optbuilder)
