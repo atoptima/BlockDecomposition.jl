@@ -19,7 +19,8 @@ mutable struct Annotation{T, F<:Formulation, D<:Decomposition}
     axis_index_value::T
     lower_multiplicity::Float64
     upper_multiplicity::Float64
-    optimizer_builder::Union{Nothing,Function}
+    optimizer_builder::Union{Nothing,MOI.AbstractOptimizer}
+    pricing_oracle::Union{Nothing,Function}
 end
 
 getid(a::Annotation) = a.unique_id
@@ -29,21 +30,23 @@ getdecomposition(a::Annotation) = a.decomposition
 getlowermultiplicity(a::Annotation) = a.lower_multiplicity
 getuppermultiplicity(a::Annotation) = a.upper_multiplicity
 getoptimizerbuilder(a::Annotation) = a.optimizer_builder
+getpricingoracle(a::Annotation) = a.pricing_oracle
 
 setlowermultiplicity!(a::Annotation, lm::Real) = a.lower_multiplicity = lm 
 setuppermultiplicity!(a::Annotation, um::Real) = a.upper_multiplicity = um
-setoptimizerbuilder!(a::Annotation, f::Union{Nothing,Function}) = a.optimizer_builder = f
+setoptimizerbuilder!(a::Annotation, f::Union{Nothing, MOI.AbstractOptimizer}) = a.optimizer_builder = f
+setpricingoracle!(a::Annotation, f::Union{Nothing, Function}) = a.pricing_oracle = f
 
-OriginalAnnotation() = Annotation(0, 0, Original, NoDecomposition, 0, 1.0, 1.0, nothing)
+OriginalAnnotation() = Annotation(0, 0, Original, NoDecomposition, 0, 1.0, 1.0, nothing, nothing)
 
 function MasterAnnotation(tree, D::Type{<:Decomposition})
     uid = generateannotationid(tree)
-    return Annotation(uid, 0, Master, D, 0, 1.0, 1.0, nothing)
+    return Annotation(uid, 0, Master, D, 0, 1.0, 1.0, nothing, nothing)
 end
 
 function Annotation(tree, F::Type{<:Formulation}, D::Type{<:Decomposition}, v)
     uid = generateannotationid(tree)
-    return Annotation(uid, 0, F, D, v, 1.0, 1.0, nothing)
+    return Annotation(uid, 0, F, D, v, 1.0, 1.0, nothing, nothing)
 end
 
 function Base.show(io::IO, a::Annotation)
