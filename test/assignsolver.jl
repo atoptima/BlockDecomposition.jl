@@ -1,18 +1,23 @@
-build_master_moi_optimizer() = nothing
-build_sp_moi_optimizer() = nothing
+sp_pricing_oracle() = nothing
+
+struct MokeOptimizer <: MOI.AbstractOptimizer end
 
 function test_assignsolver()
 
     @testset "Assign default MOI mip solver" begin
-        d = GapToyData(5, 2)
+        d = GapToyData(5, 3)
         model, x, cov, knp, dec = generalized_assignement(d)
         master = getmaster(dec)
         subproblems = getsubproblems(dec)
-        assignsolver!(master, build_master_moi_optimizer)
-        for sp in subproblems
-            assignsolver!(sp, build_sp_moi_optimizer)
-        end
-        @test BD.getoptimizerbuilder(master.annotation) == build_master_moi_optimizer
-        @test BD.getoptimizerbuilder(subproblems[1].annotation) == build_sp_moi_optimizer
+
+        specify!.(subproblems, solver = sp_pricing_oracle)
+        @test BD.getpricingoracle(subproblems[1].annotation) == sp_pricing_oracle
+        @test BD.getoptimizerbuilder(subproblems[2].annotation) === nothing
+        specify!(subproblems[2], solver = nothing)
+        @test BD.getoptimizerbuilder(subproblems[2].annotation) === nothing
+        @test BD.getpricingoracle(subproblems[2].annotation) === nothing
+        specify!(subproblems[3], solver = MokeOptimizer)
+        @test BD.getoptimizerbuilder(subproblems[3].annotation) == MokeOptimizer()
+        @test BD.getpricingoracle(subproblems[2].annotation) === nothing
     end
 end
