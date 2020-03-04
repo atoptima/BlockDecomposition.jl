@@ -17,3 +17,18 @@ function MOI.submit(
 )
     return MOI.submit(JuMP.backend(model), cb, JuMP.index.(variables), values)
 end
+
+"""
+doc todo
+"""
+struct OracleVariableCost{OracleDataType} <: MOI.AbstractVariableAttribute
+    callback_data::OracleDataType
+end
+
+# a method symetrical to callback_value (JuMP.jl/src/callbacks.jl:19)
+function oracle_cost(oracle_data, x::JuMP.VariableRef)
+    return MOI.get(
+        JuMP.backend(JuMP.owner_model(x), OracleVariableCost(oracle_data)),
+        index(x)
+    )
+end
