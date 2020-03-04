@@ -1,11 +1,19 @@
 """
-    PricingOracle(oracle_data)
+    PricingSolution(oracle_data)
 
 doc todo but it works like HeuristicSolution callback.
 The user submits the solution as `variables, values` where `values[i]` gives
 the value of `variables[i]`.
 """
-struct PricingOracle{OracleDataType} <: MOI.AbstractSubmittable
+struct PricingSolution{OracleDataType} <: MOI.AbstractSubmittable
     oracle_data::OracleDataType
 end
 
+function MOI.submit(
+    model::Model,
+    cb::BD.PricingSolution,
+    variables::Vector{JuMP.VariableRef},
+    values::Vector{Float64}
+)
+    return MOI.submit(JuMP.backend(model), cb, JuMP.index.(variables), values)
+end
