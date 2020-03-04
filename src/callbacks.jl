@@ -22,7 +22,7 @@ end
 doc todo
 """
 struct OracleVariableCost{OracleDataType} <: MOI.AbstractVariableAttribute
-    callback_data::OracleDataType
+    oracle_data::OracleDataType
 end
 
 # a method symetrical to callback_value (JuMP.jl/src/callbacks.jl:19)
@@ -31,4 +31,15 @@ function oracle_cost(oracle_data, x::JuMP.VariableRef)
         JuMP.backend(JuMP.owner_model(x), OracleVariableCost(oracle_data)),
         index(x)
     )
+end
+
+"""
+doc todo
+"""
+struct OracleSubproblemId{OracleDataType} <: MOI.AbstractModelAttribute
+    oracle_data::OracleDataType
+end
+
+function oracle_spid(oracle_data, model::JuMP.Model)
+    return MOI.get(JuMP.backend(model), OracleSubproblemId(oracle_data))
 end
