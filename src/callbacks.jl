@@ -11,7 +11,7 @@ end
 
 function MOI.submit(
     model::Model,
-    cb::BD.PricingSolution,
+    cb::PricingSolution,
     variables::Vector{JuMP.VariableRef},
     values::Vector{Float64}
 )
