@@ -1,9 +1,8 @@
 """
     PricingSolution(cbdata)
 
-doc todo but it works like HeuristicSolution callback.
-The user submits the solution as `variables, values` where `values[i]` gives
-the value of `variables[i]`.
+Solution to a subproblem. The user submits the solution as `variables, values`
+where `values[i]` gives the value of `variables[i]`.
 """
 struct PricingSolution{CbDataType} <: MOI.AbstractSubmittable
     callback_data::CbDataType
@@ -22,7 +21,10 @@ function MOI.submit(
 end
 
 """
-doc todo
+    PricingVariableCost(cbdata)
+
+A variable attribute to get the reduced cost of a variable within a pricing
+callback.
 """
 struct PricingVariableCost{CbDataType} <: MOI.AbstractVariableAttribute
     callback_data::CbDataType
@@ -38,7 +40,10 @@ function callback_reduced_cost(cbdata, x::JuMP.VariableRef)
 end
 
 """
-doc todo
+    PricingSubproblemId(cbdata)
+
+A model attribute to get the id of the subproblem treated within a pricing
+callback.
 """
 struct PricingSubproblemId{CbDataType} <: MOI.AbstractModelAttribute
     callback_data::CbDataType
@@ -50,7 +55,10 @@ function callback_spid(cbdata, model::JuMP.Model)
 end
 
 """
-doc todo
+    PricingVariableLowerBound(cbdata)
+
+A variable attribute to get the current lower bound of a variable within a 
+pricing callback.
 """
 struct PricingVariableLowerBound{CbDataType} <: MOI.AbstractVariableAttribute
     callback_data::CbDataType
@@ -65,7 +73,10 @@ function callback_lb(cbdata, x::JuMP.VariableRef)
 end
 
 """
-doc todo
+    PricingVariableUpperBound(cbdata)
+
+A variable attribute to get the current upper bound of a variable within a 
+pricing callback.
 """
 struct PricingVariableUpperBound{CbDataType} <: MOI.AbstractVariableAttribute
     callback_data::CbDataType
