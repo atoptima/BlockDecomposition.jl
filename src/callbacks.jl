@@ -12,10 +12,13 @@ end
 function MOI.submit(
     model::Model,
     cb::PricingSolution,
+    cost::Float64,
     variables::Vector{JuMP.VariableRef},
     values::Vector{Float64}
 )
-    return MOI.submit(JuMP.backend(model), cb, JuMP.index.(variables), values)
+    return MOI.submit(
+        JuMP.backend(model), cb, cost, JuMP.index.(variables), values
+    )
 end
 
 """
@@ -56,8 +59,8 @@ MOI.is_set_by_optimize(::OracleVariableLowerBound) = true
 
 function oracle_lb(oracle_data, x::JuMP.VariableRef)
     return MOI.get(
-        JuMP.backend(JuMP.owner_model(x)), OracleVariableLowerBound(oracle_data),
-        index(x)
+        JuMP.backend(JuMP.owner_model(x)), 
+        OracleVariableLowerBound(oracle_data), index(x)
     )
 end
 
@@ -71,7 +74,7 @@ MOI.is_set_by_optimize(::OracleVariableUpperBound) = true
 
 function oracle_ub(oracle_data, x::JuMP.VariableRef)
     return MOI.get(
-        JuMP.backend(JuMP.owner_model(x)), OracleVariableUpperBound(oracle_data),
-        index(x)
+        JuMP.backend(JuMP.owner_model(x)), 
+        OracleVariableUpperBound(oracle_data), index(x)
     )
 end
