@@ -1,12 +1,12 @@
 """
-    PricingSolution(oracle_data)
+    PricingSolution(cbdata)
 
 doc todo but it works like HeuristicSolution callback.
 The user submits the solution as `variables, values` where `values[i]` gives
 the value of `variables[i]`.
 """
-struct PricingSolution{OracleDataType} <: MOI.AbstractSubmittable
-    oracle_data::OracleDataType
+struct PricingSolution{CbDataType} <: MOI.AbstractSubmittable
+    callback_data::CbDataType
 end
 
 function MOI.submit(
@@ -24,15 +24,15 @@ end
 """
 doc todo
 """
-struct OracleVariableCost{OracleDataType} <: MOI.AbstractVariableAttribute
-    oracle_data::OracleDataType
+struct PricingVariableCost{CbDataType} <: MOI.AbstractVariableAttribute
+    callback_data::CbDataType
 end
-MOI.is_set_by_optimize(::OracleVariableCost) = true
+MOI.is_set_by_optimize(::PricingVariableCost) = true
 
 # a method symetrical to callback_value (JuMP.jl/src/callbacks.jl:19)
-function oracle_cost(oracle_data, x::JuMP.VariableRef)
+function callback_reduced_cost(cbdata, x::JuMP.VariableRef)
     return MOI.get(
-        JuMP.backend(JuMP.owner_model(x)), OracleVariableCost(oracle_data),
+        JuMP.backend(JuMP.owner_model(x)), PricingVariableCost(cbdata),
         index(x)
     )
 end
@@ -40,41 +40,41 @@ end
 """
 doc todo
 """
-struct OracleSubproblemId{OracleDataType} <: MOI.AbstractModelAttribute
-    oracle_data::OracleDataType
+struct PricingSubproblemId{CbDataType} <: MOI.AbstractModelAttribute
+    callback_data::CbDataType
 end
-MOI.is_set_by_optimize(::OracleSubproblemId) = true
+MOI.is_set_by_optimize(::PricingSubproblemId) = true
 
-function oracle_spid(oracle_data, model::JuMP.Model)
-    return MOI.get(JuMP.backend(model), OracleSubproblemId(oracle_data))
+function callback_spid(cbdata, model::JuMP.Model)
+    return MOI.get(JuMP.backend(model), PricingSubproblemId(cbdata))
 end
 
 """
 doc todo
 """
-struct OracleVariableLowerBound{OracleDataType} <: MOI.AbstractVariableAttribute
-    oracle_data::OracleDataType
+struct PricingVariableLowerBound{CbDataType} <: MOI.AbstractVariableAttribute
+    callback_data::CbDataType
 end
-MOI.is_set_by_optimize(::OracleVariableLowerBound) = true
+MOI.is_set_by_optimize(::PricingVariableLowerBound) = true
 
-function oracle_lb(oracle_data, x::JuMP.VariableRef)
+function callback_lb(cbdata, x::JuMP.VariableRef)
     return MOI.get(
         JuMP.backend(JuMP.owner_model(x)), 
-        OracleVariableLowerBound(oracle_data), index(x)
+        PricingVariableLowerBound(cbdata), index(x)
     )
 end
 
 """
 doc todo
 """
-struct OracleVariableUpperBound{OracleDataType} <: MOI.AbstractVariableAttribute
-    oracle_data::OracleDataType
+struct PricingVariableUpperBound{CbDataType} <: MOI.AbstractVariableAttribute
+    callback_data::CbDataType
 end
-MOI.is_set_by_optimize(::OracleVariableUpperBound) = true
+MOI.is_set_by_optimize(::PricingVariableUpperBound) = true
 
-function oracle_ub(oracle_data, x::JuMP.VariableRef)
+function callback_ub(cbdata, x::JuMP.VariableRef)
     return MOI.get(
         JuMP.backend(JuMP.owner_model(x)), 
-        OracleVariableUpperBound(oracle_data), index(x)
+        PricingVariableUpperBound(cbdata), index(x)
     )
 end
