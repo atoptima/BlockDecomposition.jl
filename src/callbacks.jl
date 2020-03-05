@@ -45,3 +45,33 @@ MOI.is_set_by_optimize(::OracleSubproblemId) = true
 function oracle_spid(oracle_data, model::JuMP.Model)
     return MOI.get(JuMP.backend(model), OracleSubproblemId(oracle_data))
 end
+
+"""
+doc todo
+"""
+struct OracleVariableLowerBound{OracleDataType} <: MOI.AbstractVariableAttribute
+    oracle_data::OracleDataType
+end
+MOI.is_set_by_optimize(::OracleVariableLowerBound) = true
+
+function oracle_lb(oracle_data, x::JuMP.VariableRef)
+    return MOI.get(
+        JuMP.backend(JuMP.owner_model(x)), OracleVariableLowerBound(oracle_data),
+        index(x)
+    )
+end
+
+"""
+doc todo
+"""
+struct OracleVariableUpperBound{OracleDataType} <: MOI.AbstractVariableAttribute
+    oracle_data::OracleDataType
+end
+MOI.is_set_by_optimize(::OracleVariableUpperBound) = true
+
+function oracle_ub(oracle_data, x::JuMP.VariableRef)
+    return MOI.get(
+        JuMP.backend(JuMP.owner_model(x)), OracleVariableUpperBound(oracle_data),
+        index(x)
+    )
+end
