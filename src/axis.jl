@@ -13,6 +13,8 @@ struct AxisId{Name, T}
     indice::T
 end
 
+MOI.map_indices(::Function, x::AxisId) = x
+
 function name(i::AxisId{Name,T}) where {Name,T}
     return Name
 end
