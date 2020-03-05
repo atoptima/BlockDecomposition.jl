@@ -29,7 +29,7 @@ MOI.is_set_by_optimize(::OracleVariableCost) = true
 # a method symetrical to callback_value (JuMP.jl/src/callbacks.jl:19)
 function oracle_cost(oracle_data, x::JuMP.VariableRef)
     return MOI.get(
-        JuMP.backend(JuMP.owner_model(x), OracleVariableCost(oracle_data)),
+        JuMP.backend(JuMP.owner_model(x)), OracleVariableCost(oracle_data),
         index(x)
     )
 end
