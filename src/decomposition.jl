@@ -115,6 +115,11 @@ function MOI.get(
     dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
     ci::MOI.ConstraintIndex
 )
+    if MOI.get(dest, MOI.ConstraintName(), ci) == "" # anonymous constraint
+        tree = MOI.get(dest, DecompositionTree())
+        tree === nothing && return nothing
+        return tree.root.master
+    end
     conattr = get(dest.conattr, attribute, nothing)
     conattr === nothing && return nothing
     val = get(conattr, ci, nothing)
@@ -125,6 +130,11 @@ function MOI.get(
     dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     vi::MOI.VariableIndex
 )
+    if MOI.get(dest, MOI.VariableName(), vi) == "" # anonymous constraint
+        tree = MOI.get(dest, DecompositionTree())
+        tree === nothing && return nothing
+        return tree.root.master
+    end
     varattr = get(dest.varattr, attribute, nothing)
     varattr === nothing && return nothing
     val = get(varattr, vi, nothing)
