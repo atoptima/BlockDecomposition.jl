@@ -8,6 +8,7 @@ or the constraint is located.
 function register_decomposition(model::JuMP.Model)
     # Link to the tree
     tree = gettree(model)
+    tree === nothing && return
     for (key, jump_obj) in model.obj_dict
         _annotate_elements!(model, jump_obj, tree)
     end

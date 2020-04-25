@@ -20,6 +20,7 @@ include("formulations.jl")
 include("decomposition.jl")
 include("objective.jl")
 include("callbacks.jl")
+include("utils.jl")
 
 function BlockModel(args...; kw...)
     m = JuMP.Model(args...; kw...)

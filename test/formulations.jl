@@ -30,7 +30,6 @@ function generalized_assignement(d::GapData)
     master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
     specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
-
     return model, x, cov, knp, decomposition
 end
 
