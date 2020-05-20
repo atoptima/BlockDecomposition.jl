@@ -152,6 +152,7 @@ function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, 
     end
 end
 
+
 macro dantzig_wolfe_decomposition(args...)
     if length(args) != 3
         error("Three arguments expected: model, decomposition name, and axis")

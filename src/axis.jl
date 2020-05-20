@@ -9,6 +9,9 @@ import Base.isless
 import Base.==
 import Base.vcat
 
+using LightGraphs, MetaGraphs, TikzGraphs, Combinatorics, TikzPictures
+
+
 struct AxisId{Name, T}
     indice::T
 end
@@ -54,6 +57,8 @@ function Axis(name::Symbol, container::A) where {T, A <: AbstractArray{T}}
     return Axis{name, T}(name, indices)
 end
 
+Axis(container) = Axis(Symbol(), container)
+
 name(axis::Axis) =  axis.name
 iterate(axis::Axis) = iterate(axis.container)
 iterate(axis::Axis, state) = iterate(axis.container, state)
@@ -61,6 +66,8 @@ length(axis::Axis) = length(axis.container)
 getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
 vcat(A::BlockDecomposition.Axis, B::AbstractArray) = vcat(A.container, B)
+Base.isequal(i::Axis, j::Axis) = isequal(i.container, j.container)
+Base.hash(i::Axis, h::UInt) = hash(i.container, h)
 
 function _generate_axis(name, container)
     sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
@@ -80,3 +87,173 @@ macro axis(args...)
     return esc(exp)
 end
 
+
+
+
+function get_best_block_structure(model::JuMP.Model)
+	constraints_and_axes = get_constraints_and_axes(model)
+	decompositions = Array{Block_Structure,1}()
+	axesSets = collect(Combinatorics.powerset(collect(constraints_and_axes.axes)))
+	for axes in axesSets
+		decomposition = get_block_structure(axes, constraints_and_axes, model)
+		push!(decompositions, decomposition)
+	end
+	#to do: find and return the "best" decomposition
+	return decompositions[1]
+end
+
+mutable struct Constraints_and_Axes  #constains all the information we need to check different decompositons
+	constraints::Set{JuMP.ConstraintRef}
+	axes::Set{BlockDecomposition.Axis}
+	variables::Set{MOI.VariableIndex} # MOI. VariableIndex can be used for reverencing variables in a model
+	constraints_to_axes::Dict{JuMP.ConstraintRef, Set{BlockDecomposition.Axis}} 
+	constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}
+end
+
+function get_constraints_and_axes(model::JuMP.Model) #returns an instance of the struct Constraints_and_axes
+	constraints = Set{JuMP.ConstraintRef}()
+	axes = Set{BlockDecomposition.Axis}()
+	variables = Set{JuMP.MOI.VariableIndex}()
+	constraints_to_axes = Dict{JuMP.ConstraintRef, Set{BlockDecomposition.Axis}}()
+	constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
+	constraints_and_axes = Constraints_and_Axes(constraints, axes, variables, constraints_to_axes, constraints_to_variables)
+	
+	for k in keys(model.obj_dict)  #check all names in the model
+		# store single references to constraints in a DenseAxisArray (already done if several constraints are referenced with the same name)
+		reference = typeof(model.obj_dict[k]) <: JuMP.Containers.DenseAxisArray ? model.obj_dict[k] : JuMP.Containers.DenseAxisArray([model.obj_dict[k]],1) 
+		if typeof(reference[1]) <: JuMP.ConstraintRef #constraint  
+			for c in reference
+				_add_constraint!(constraints_and_axes, c, model, reference)
+			end
+		elseif typeof(reference[1]) <: JuMP.VariableRef
+			for v in reference
+				push!(variables, JuMP.index(v))
+			end
+		end
+	end
+	constraints_and_axes = Constraints_and_Axes(constraints, axes, variables, constraints_to_axes, constraints_to_variables)
+	add_anonymous_var_and_con!(constraints_and_axes, model)
+	return constraints_and_axes
+end
+
+function add_anonymous_var_and_con!(car::Constraints_and_Axes, model::JuMP.Model) #adds anonymous constraints and axes from the model to constraints_and_axes (car)
+	types =  JuMP.list_of_constraint_types(model)
+	for t in types
+		if t[1] != VariableRef
+			for c in JuMP.all_constraints(model, t[1], t[2])
+				if !in(c, car.constraints)
+					push!(car.constraints, c)
+					car.constraints_to_axes[c] = Set{BlockDecomposition.Axis}()
+					car.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
+				end
+			end
+		end
+	end
+	for v in JuMP.all_variables(model)
+		push!(car.variables, JuMP.index(v))
+	end
+end
+
+function _add_constraint!(o::Constraints_and_Axes, c::JuMP.ConstraintRef, model::JuMP.Model, reference_constraints_name::T) where T <: JuMP.Containers.DenseAxisArray
+	push!(o.constraints, c)
+	axes_of_constraint = _get_axes_of_constraint(reference_constraints_name)
+	for r in axes_of_constraint
+		push!(o.axes, r)
+	end
+	o.constraints_to_axes[c] = axes_of_constraint
+	o.constraints_to_variables[c] = _get_variables_in_constraint(model, c)	
+end	
+
+function _get_axes_of_constraint(reference_constraints_name::T) where T <: JuMP.Containers.DenseAxisArray
+	axes_of_constraint = Set{BlockDecomposition.Axis}()
+	for a in reference_constraints_name.axes
+		if a != 1   #axes of the form 1:1 do not matter (single constraints)
+			push!(axes_of_constraint, Axis(a))
+		end
+	end
+	return axes_of_constraint
+end
+
+function _get_variables_in_constraint(model::JuMP.Model, constraint::JuMP.ConstraintRef)
+    f = MOI.get(model, MathOptInterface.ConstraintFunction(), constraint)
+	variables = Set{MOI.VariableIndex}()
+	for term in f.terms
+		push!(variables, term.variable_index)
+	end
+	return variables
+end
+
+function get_block_structure(axes::Array{<:Axis,1}, constraints_and_axes::Constraints_and_Axes, model::JuMP.Model) 
+	vertices = Set{JuMP.ConstraintRef}()
+	master_constraints = Set{JuMP.ConstraintRef}()
+	connected_components = Set{Set{JuMP.ConstraintRef}}()
+	
+	for c in keys(constraints_and_axes.constraints_to_axes)
+		if !isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))  #which constraints are build over at least one set that is contained in axes?
+			push!(master_constraints, c)
+		else
+			push!(vertices, c)
+		end
+	end
+
+	graph = _create_graph(vertices, constraints_and_axes)
+	blocks = _get_connected_components!(graph)
+	block_structure = Block_Structure(master_constraints, axes, blocks, graph)
+	return block_structure
+end
+
+struct Block_Structure
+    master_constraints::Set{JuMP.ConstraintRef}
+	master_sets::Array{BlockDecomposition.Axis,1} #index sets used to determine which constraints are master constraints
+	blocks::Set{Set{JuMP.ConstraintRef}}
+	graph::MetaGraphs.MetaGraph
+end
+
+function _get_connected_components!(graph::MetaGraphs.MetaGraph)
+	connected_components_int = connected_components(graph)
+	blocks = Set{Set{JuMP.ConstraintRef}}()
+	for component_int in connected_components_int
+			component_constraintref = Set{JuMP.ConstraintRef}()
+			for vertex_int in component_int
+				push!(component_constraintref, graph[vertex_int, :constraint_ref])
+			end
+			push!(blocks, component_constraintref)
+	end
+	return blocks
+end
+
+function _create_graph(vertices::Set{JuMP.ConstraintRef}, constraints_and_axes::Constraints_and_Axes)
+	graph = LightGraphs.SimpleGraph(0)
+	graph = MetaGraphs.MetaGraph(graph)
+	n_vertices = LightGraphs.add_vertices!(graph, length(vertices))
+	MetaGraphs.set_indexing_prop!(graph, :constraint_ref)
+	i = 1
+	#set values for indexing property :constraint_ref
+	for ver in vertices  
+		MetaGraphs.set_prop!(graph, i, :constraint_ref, ver)
+		i = i+1
+	end
+	#build edges
+    for v1 in vertices, v2 in vertices 
+		 if v1 != v2
+			intersection = LightGraphs.intersect(constraints_and_axes.constraints_to_variables[v1], constraints_and_axes.constraints_to_variables[v2])
+			isempty(intersection) ? true : LightGraphs.add_edge!(graph, graph[v1, :constraint_ref], graph[v2, :constraint_ref])
+		end
+	end 	
+	return graph
+end
+
+function draw_graph(mgraph::MetaGraphs.MetaGraph)
+	sgraph = SimpleGraph(nv(mgraph))
+	labels = Array{String}(undef, nv(mgraph))
+	i = 1
+	for v in collect(vertices(mgraph))
+		labels[i] = convert(String, repr(mgraph[i, :constraint_ref]))
+		i = i + 1
+	end
+	for e in edges(mgraph)
+		add_edge!(sgraph, e)
+	end
+	t = TikzGraphs.plot(sgraph, labels)
+	save(SVG("graph.svg"),t)
+end
