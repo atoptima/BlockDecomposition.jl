@@ -7,11 +7,38 @@ or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
     # Link to the tree
-    tree = gettree(model)
-    for (key, jump_obj) in model.obj_dict
-        _annotate_elements!(model, jump_obj, tree)
-    end
+	if model.ext[:automatic_decomposition]
+		register_automatic_decomposition(model)
+	else
+		tree = gettree(model)
+			for (key, jump_obj) in model.obj_dict
+				_annotate_elements!(model, jump_obj, tree)
+			end
+	end
     return
+end
+
+function register_automatic_decomposition(model::JuMP.Model)
+    tree = gettree(model)
+	for variableref in JuMP.all_variables(model)
+		ann = _getannotation(tree, Vector{AxisId}())
+		setannotation!(model, variableref, ann)
+	end
+	decomposition_structure = model.ext[:decomposition_structure]
+	for constraintref in decomposition_structure.master_constraints
+		ann = _getannotation(tree, Vector{AxisId}())
+		setannotation!(model, constraintref, ann)
+	end
+	virtual_axis = BlockDecomposition.Axis(1:length(decomposition_structure.blocks))
+	axisids = Vector{AxisId}()
+	for i in virtual_axis
+		empty!(axisids)
+		push!(axisids, i)
+		ann = _getannotation(tree, axisids)
+		for constraintref in decomposition_structure.blocks[i] #annotate constraints in one block with the same annotation
+			setannotation!(model, constraintref, ann)
+		end
+	end
 end
 
 _getrootmasterannotation(tree) = tree.root.master

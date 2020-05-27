@@ -98,8 +98,7 @@ function get_best_block_structure(model::JuMP.Model)
 		decomposition = get_block_structure(axes, constraints_and_axes, model)
 		push!(decompositions, decomposition)
 	end
-	#to do: find and return the "best" decomposition
-	return decompositions[1]
+	return decompositions[2] #to do: find best decomposition
 end
 
 mutable struct Constraints_and_Axes  #constains all the information we need to check different decompositons
@@ -205,13 +204,13 @@ end
 struct Block_Structure
     master_constraints::Set{JuMP.ConstraintRef}
 	master_sets::Array{BlockDecomposition.Axis,1} #index sets used to determine which constraints are master constraints
-	blocks::Set{Set{JuMP.ConstraintRef}}
+	blocks::Array{Set{JuMP.ConstraintRef},1}
 	graph::MetaGraphs.MetaGraph
 end
 
 function _get_connected_components!(graph::MetaGraphs.MetaGraph)
 	connected_components_int = connected_components(graph)
-	blocks = Set{Set{JuMP.ConstraintRef}}()
+	blocks = Array{Set{JuMP.ConstraintRef},1}()
 	for component_int in connected_components_int
 			component_constraintref = Set{JuMP.ConstraintRef}()
 			for vertex_int in component_int

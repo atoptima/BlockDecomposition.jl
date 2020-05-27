@@ -22,9 +22,10 @@ include("decomposition.jl")
 include("objective.jl")
 include("callbacks.jl")
 
-function BlockModel(args...; kw...)
+function BlockModel(args...; automatic_decomposition = false, kw...)
     m = JuMP.Model(args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
+	m.ext[:automatic_decomposition] = automatic_decomposition
     return m
 end
 
