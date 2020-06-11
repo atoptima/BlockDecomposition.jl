@@ -92,13 +92,20 @@ end
 
 function get_best_block_structure(model::JuMP.Model)
 	constraints_and_axes = get_constraints_and_axes(model)
-	decompositions = Array{Block_Structure,1}()
+	block_structures = Array{Block_Structure,1}()
 	axesSets = collect(Combinatorics.powerset(collect(constraints_and_axes.axes)))
 	for axes in axesSets
-		decomposition = get_block_structure(axes, constraints_and_axes, model)
-		push!(decompositions, decomposition)
+		block_structure = get_block_structure(axes, constraints_and_axes, model)
+		push!(block_structures, block_structure)
 	end
-	return decompositions[2] #to do: find best decomposition
+	return block_structures[3] #to do: find best decomposition
+end
+
+struct Block_Structure
+    master_constraints::Set{JuMP.ConstraintRef}
+	master_sets::Array{BlockDecomposition.Axis,1} #index sets used to determine which constraints are master constraints
+	blocks::Array{Set{JuMP.ConstraintRef},1}
+	graph::MetaGraphs.MetaGraph
 end
 
 mutable struct Constraints_and_Axes  #constains all the information we need to check different decompositons
@@ -108,6 +115,32 @@ mutable struct Constraints_and_Axes  #constains all the information we need to c
 	constraints_to_axes::Dict{JuMP.ConstraintRef, Set{BlockDecomposition.Axis}} 
 	constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}
 end
+
+function plumple(block_structures::Array{Block_Structure,1}, constraints_and_axes::Constraints_and_Axes)
+	result = nothing
+	best = length(constraints_and_axes.constraints) * length(constraints_and_axes.variables) 
+	for block_structure in block_structures
+		plumple_value = _get_plumple_value(block_structure, constraints_and_axes)
+		if plumple_value <= best
+			best = plumple_value
+			result = block_structure
+		end
+	end
+	return result
+end
+
+function _get_plumple_value(block_structure::Block_Structure, constraints_and_axes::Constraints_and_Axes)
+	n_master = length(constraints_and_axes.variables) * length(block_structure.master_constraints) 
+	n_blocks = 0
+	for block in block_structure.blocks
+		for constraint in block
+			n_blocks = n_blocks + length(constraints_and_axes.constraints_to_variables[constraint])
+		end
+	end
+	return n_master+n_blocks
+end
+
+
 
 function get_constraints_and_axes(model::JuMP.Model) #returns an instance of the struct Constraints_and_axes
 	constraints = Set{JuMP.ConstraintRef}()
@@ -199,13 +232,6 @@ function get_block_structure(axes::Array{<:Axis,1}, constraints_and_axes::Constr
 	blocks = _get_connected_components!(graph)
 	block_structure = Block_Structure(master_constraints, axes, blocks, graph)
 	return block_structure
-end
-
-struct Block_Structure
-    master_constraints::Set{JuMP.ConstraintRef}
-	master_sets::Array{BlockDecomposition.Axis,1} #index sets used to determine which constraints are master constraints
-	blocks::Array{Set{JuMP.ConstraintRef},1}
-	graph::MetaGraphs.MetaGraph
 end
 
 function _get_connected_components!(graph::MetaGraphs.MetaGraph)
