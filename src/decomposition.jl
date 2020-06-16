@@ -1,8 +1,8 @@
 """
     register_decomposition(model)
 
-Assign to each variable and constraint an annotation indicating in 
-which partition (master/subproblem) of the original formulation the variable 
+Assign to each variable and constraint an annotation indicating in
+which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
@@ -85,7 +85,7 @@ struct DecompositionTree <: MOI.AbstractModelAttribute end
 setannotation!(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
 setannotation!(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
 
-function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition, 
+function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
         ci::MOI.ConstraintIndex, annotation::Annotation)
     if !haskey(dest.conattr, attribute)
         dest.conattr[attribute] = Dict{MOI.ConstraintIndex, Tuple}()
@@ -95,7 +95,7 @@ function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecompositio
 end
 
 function MOI.set(
-    dest::MOIU.UniversalFallback, attribute::VariableDecomposition, 
+    dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     vi::MOI.VariableIndex, ann::Annotation
 )
     if !haskey(dest.varattr, attribute)
@@ -116,30 +116,24 @@ function MOI.get(
     dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
     ci::MOI.ConstraintIndex
 )
-    if MOI.get(dest, MOI.ConstraintName(), ci) == "" # anonymous constraint
-        tree = MOI.get(dest, DecompositionTree())
-        tree === nothing && return nothing
-        return tree.root.master
-    end
+    tree = MOI.get(dest, DecompositionTree())
+    tree === nothing && return nothing
+
     conattr = get(dest.conattr, attribute, nothing)
-    conattr === nothing && return nothing
-    val = get(conattr, ci, nothing)
-    return val
+    conattr === nothing && return tree.root.master
+    return get(conattr, ci, tree.root.master)
 end
 
 function MOI.get(
     dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     vi::MOI.VariableIndex
 )
-    if MOI.get(dest, MOI.VariableName(), vi) == "" # anonymous constraint
-        tree = MOI.get(dest, DecompositionTree())
-        tree === nothing && return nothing
-        return tree.root.master
-    end
+    tree = MOI.get(dest, DecompositionTree())
+    tree === nothing && return nothing
+
     varattr = get(dest.varattr, attribute, nothing)
-    varattr === nothing && return nothing
-    val = get(varattr, vi, nothing)
-    return val
+    varattr === nothing && return tree.root.master
+    return get(varattr, vi, tree.root.master)
 end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::DecompositionTree)
@@ -162,7 +156,7 @@ function setannotations!(
 end
 
 function setannotations!(
-    model::JuMP.Model, objref::AbstractArray, indices_set::Vector{Tuple}, 
+    model::JuMP.Model, objref::AbstractArray, indices_set::Vector{Tuple},
     ann::Annotation
 )
     for indices in indices_set
