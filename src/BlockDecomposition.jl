@@ -9,7 +9,7 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 const JC = JuMP.Containers
 
-export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems,
+export BlockModel, annotation, specify!, get_best_block_structure, gettree, getmaster, getsubproblems,
        indice, objectiveprimalbound!, objectivedualbound!
 
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
@@ -21,6 +21,7 @@ include("formulations.jl")
 include("decomposition.jl")
 include("objective.jl")
 include("callbacks.jl")
+include("automatic_decomposition.jl")
 
 function BlockModel(args...; automatic_decomposition = false, kw...)
     m = JuMP.Model(args...; kw...)
