@@ -1,6 +1,12 @@
 module BlockDecomposition
 
-using JuMP, MathOptInterface
+using Combinatorics: powerset
+using JuMP
+using LightGraphs: SimpleGraph, add_vertices!
+using MathOptInterface
+using MetaGraphs: MetaGraph, add_edge!, connected_components, edges, intersect,  set_indexing_prop!, set_prop!, vertices
+using TikzGraphs: plot
+using TikzPictures: SVG
 
 import MathOptInterface
 import MathOptInterface.Utilities
@@ -23,10 +29,10 @@ include("objective.jl")
 include("callbacks.jl")
 include("automatic_decomposition.jl")
 
-function BlockModel(args...; automatic_decomposition = false, kw...)
+function BlockModel(args...; automatic_decomposition=false, kw...)
     m = JuMP.Model(args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
-	m.ext[:automatic_decomposition] = automatic_decomposition
+    m.ext[:automatic_decomposition] = automatic_decomposition
     return m
 end
 

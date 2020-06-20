@@ -32,7 +32,7 @@ struct Leaf{V} <: AbstractNode
     edge_id::V
 end
 
-struct Node{N,V,T} <: AbstractNode 
+struct Node{N,V,T} <: AbstractNode
     tree::Tree
     parent::AbstractNode
     depth::Int
@@ -99,7 +99,7 @@ function getnodes(tree::Tree)
     queue = Queue{AbstractNode}()
     enqueue!(queue, tree.root)
     while length(queue) > 0
-        node = dequeue!(queue)                  
+        node = dequeue!(queue)
         for (key, child) in node.subproblems
             if typeof(child) <: Leaf            # if child node is a leaf, append it to the nodes list
                 push!(vec_nodes, child)
@@ -134,7 +134,7 @@ function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
 end
 
 function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
-    error("BlockDecomposition does not support nested decomposition yet.") 
+    error("BlockDecomposition does not support nested decomposition yet.")
     return
 end
 
@@ -154,15 +154,15 @@ end
 
 
 macro dantzig_wolfe_decomposition(args...)
-	node, name, axis = args
-    dw_exp = quote 
-		if length($args) != 3
-			error("Three arguments expected: model, decomposition name, and axis")
-		end
-		if $node.ext[:automatic_decomposition]
-			$node.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure($node)
-			$axis = BlockDecomposition.Axis(1:length($node.ext[:decomposition_structure].blocks))
-		end
+    node, name, axis = args
+    dw_exp = quote
+        if length($args) != 3
+            error("Three arguments expected: model, decomposition name, and axis")
+        end
+        if $node.ext[:automatic_decomposition]
+            $node.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure($node)
+            $axis = BlockDecomposition.Axis(1:length($node.ext[:decomposition_structure].blocks))
+        end
         $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)    # initialize a tree for the current root node
         BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe)
     end
