@@ -6,7 +6,7 @@ function get_best_block_structure(model::JuMP.Model)
         block_structure = get_block_structure(axes, constraints_and_axes, model)
         push!(block_structures, block_structure)
     end
-    return block_structures[2] # To do: find best decomposition
+    return plumple(block_structures, constraints_and_axes)
 end
 
 struct BlockStructure
