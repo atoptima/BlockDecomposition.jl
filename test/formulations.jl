@@ -34,7 +34,7 @@ function generalized_assignement(d::GapData)
     return model, x, cov, knp, decomposition
 end
 
-function automatic_decomposition_coluna()
+function example_assignment_automatic_decomposition()
     nb_machines = 4
     nb_jobs = 30
     c = [12.7 22.5 8.9 20.8 13.6 12.4 24.8 19.1 11.5 17.4 24.7 6.8 21.7 14.3 10.5 15.2 14.3 12.6 9.2 20.8 11.7 17.3 9.2 20.3 11.4 6.2 13.8 10.0 20.9 20.6;  19.1 24.8 24.4 23.6 16.1 20.6 15.0 9.5 7.9 11.3 22.6 8.0 21.5 14.7 23.2 19.7 19.5 7.2 6.4 23.2 8.1 13.6 24.6 15.6 22.3 8.8 19.1 18.4 22.9 8.0;  18.6 14.1 22.7 9.9 24.2 24.5 20.8 12.9 17.7 11.9 18.7 10.1 9.1 8.9 7.7 16.6 8.3 15.9 24.3 18.6 21.1 7.5 16.8 20.9 8.9 15.2 15.7 12.7 20.8 10.4;  13.1 16.2 16.8 16.7 9.0 16.9 17.9 12.1 17.5 22.0 19.9 14.6 18.2 19.6 24.2 12.9 11.3 7.5 6.5 11.3 7.8 13.8 20.7 16.8 23.6 19.1 16.8 19.3 12.5 11.0]
@@ -42,14 +42,7 @@ function automatic_decomposition_coluna()
     Q = [1020 1460 1530 1190]
     M = 1:nb_machines
     J = 1:nb_jobs
-    coluna = optimizer_with_attributes(
-       Coluna.Optimizer,
-       "params" => Coluna.Params(
-           solver = Coluna.Algorithm.TreeSearchAlgorithm() # default BCP
-       ),
-       "default_optimizer" => GLPK.Optimizer # GLPK for the master & the subproblems
-    )
-    model = BlockModel(coluna, automatic_decomposition = true)
+    model = BlockModel(automatic_decomposition = true)
     @variable(model, x[m in M, j in J], Bin)
     @constraint(model, cov[j in J], sum(x[m, j] for m in M) >= 1)
     @constraint(model, knp[m in M], sum(w[m, j] * x[m, j] for j in J) <= Q[m])
@@ -60,6 +53,26 @@ function automatic_decomposition_coluna()
     master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
 
+    specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
+
+    return model, x, cov, knp, decomposition, Axis
+end
+
+function generalized_assignment_automatic_decomposition(d::GapData)
+    model = BlockModel(automatic_decomposition = true)
+    
+    @variable(model, x[j in d.jobs, m in d.machines], Bin)
+
+    @constraint(model, cov[j in d.jobs], sum(x[j, m] for m in d.machines) >= 1)
+    @constraint(model, knp[m in d.machines], 
+         sum(d.weights[j, m] * x[j, m] for j in d.jobs) <= d.capacities[m])
+
+    @objective(model, Min, 
+         sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in d.machines))
+
+    @dantzig_wolfe_decomposition(model, decomposition, Axis)
+    master = getmaster(decomposition)
+    subproblems = getsubproblems(decomposition)
     specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
 
     return model, x, cov, knp, decomposition, Axis
