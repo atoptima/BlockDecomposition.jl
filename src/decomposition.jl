@@ -6,40 +6,48 @@ which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
-    # Link to the tree
     if model.ext[:automatic_decomposition]
         register_automatic_decomposition(model)
     else
         tree = gettree(model)
-            for (key, jump_obj) in model.obj_dict
-                _annotate_elements!(model, jump_obj, tree)
-            end
+        for (key, jump_obj) in model.obj_dict
+            _annotate_elements!(model, jump_obj, tree)
+        end
     end
     return
 end
 
 function register_automatic_decomposition(model::JuMP.Model)
     tree = gettree(model)
-    for variableref in JuMP.all_variables(model)
-        ann = _getannotation(tree, Vector{AxisId}())
-        setannotation!(model, variableref, ann)
-    end
+    # Annotate master constraints
     decomposition_structure = model.ext[:decomposition_structure]
-    for constraintref in decomposition_structure.master_constraints
-        ann = _getannotation(tree, Vector{AxisId}())
-        setannotation!(model, constraintref, ann)
-    end
-    virtual_axis = BlockDecomposition.Axis(1:length(decomposition_structure.blocks))
+    _annotate_elements!(model, collect(decomposition_structure.master_constraints), tree)
+    # Annotate variables in blocks
+    variables_in_block = Set{MOI.VariableIndex}()
+    annotated_variables = Set{MOI.VariableIndex}()
     axisids = Vector{AxisId}()
+    virtual_axis = BlockDecomposition.Axis(1:length(decomposition_structure.blocks))
     for i in virtual_axis
+        empty!(variables_in_block)
         empty!(axisids)
         push!(axisids, i)
+        # Annotate constraints in one block (and variables contained in these)  with the same annotation
         ann = _getannotation(tree, axisids)
-        # Annotate constraints in one block with the same annotation
         for constraintref in decomposition_structure.blocks[i]
             setannotation!(model, constraintref, ann)
+            union!(variables_in_block,
+                model.ext[:decomposition_structure].constraints_and_axes.constraints_to_variables[constraintref]
+            )
         end
+        for v in variables_in_block 
+            setannotation!(model, JuMP.VariableRef(model, v), ann)
+        end
+        union!(annotated_variables, variables_in_block)
     end
+    
+    # Annotate all other variables
+    all_variables = MathOptInterface.get(model, MathOptInterface.ListOfVariableIndices())
+    _annotate_elements!(model, [JuMP.VariableRef(model, v) for v in collect(setdiff(all_variables, annotated_variables))], tree)
 end
 
 _getrootmasterannotation(tree) = tree.root.master
