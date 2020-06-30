@@ -32,4 +32,5 @@ function test_automatic_decomposition()
         
         tree = gettree(model)
         @test gettree(model) == gettree(dec)
+    end
 end
