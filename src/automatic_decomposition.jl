@@ -1,3 +1,4 @@
+# Finds the best decomposition structure of to be used by the solver 
 function get_best_block_structure(model::JuMP.Model)
     constraints_and_axes = get_constraints_and_axes(model)
     block_structures = Array{BlockStructure,1}()
@@ -6,33 +7,52 @@ function get_best_block_structure(model::JuMP.Model)
         block_structure = get_block_structure(axes, constraints_and_axes, model)
         push!(block_structures, block_structure)
     end
-    return plumple(block_structures, constraints_and_axes)
+    result =  plumple(block_structures, constraints_and_axes)
+    return result
+end
+
+# Decomposes the given JuMP Model automatically
+function decompose(model::JuMP.Model)
+    model.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure(model)
+    decomposition_axis = BlockDecomposition.Axis(1:length(model.ext[:decomposition_structure].blocks))
+    decomposition = BlockDecomposition.decompose_leaf(
+        model,
+        BlockDecomposition.DantzigWolfe,
+        decomposition_axis
+    )
+    BlockDecomposition.register_subproblems!(
+        decomposition,
+        decomposition_axis,
+        BlockDecomposition.DwPricingSp,
+        BlockDecomposition.DantzigWolfe
+    )
+    return decomposition, decomposition_axis
+end
+
+# Contains all the information about the constraints and variables in a model we might need
+# to compute different block structures
+mutable struct Constraints_and_Axes
+    constraints::Set{JuMP.ConstraintRef}
+    axes::Set{BlockDecomposition.Axis}
+    variables::Set{MOI.VariableIndex}
+    constraints_to_axes::Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}
+    constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}
 end
 
 struct BlockStructure
+    # constraints_and_axes is the same for every possible BlockStructure of a model
+    constraints_and_axes::Constraints_and_Axes
     master_constraints::Set{JuMP.ConstraintRef}
     master_sets::Array{BlockDecomposition.Axis,1}
     blocks::Array{Set{JuMP.ConstraintRef},1}
     graph::MetaGraph
 end
 
-# Contains all the information we need to check different decompositons
-mutable struct Constraints_and_Axes
-    constraints::Set{JuMP.ConstraintRef}
-    axes::Set{BlockDecomposition.Axis}
-    variables::Set{MOI.VariableIndex}
-    constraints_to_axes::Dict{JuMP.ConstraintRef, Set{BlockDecomposition.Axis}}
-    constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}
-end
-
-function plumple(
-    block_structures::Array{BlockStructure,1},
-    constraints_and_axes::Constraints_and_Axes,
-)
+function plumple(block_structures::Array{BlockStructure,1}, constraints_and_axes::Constraints_and_Axes)
     result = nothing
     best = length(constraints_and_axes.constraints) * length(constraints_and_axes.variables)
     for block_structure in block_structures
-        plumple_value = _get_plumple_value(block_structure, constraints_and_axes)
+        plumple_value = _get_plumple_value(block_structure)
         if plumple_value <= best
             best = plumple_value
             result = block_structure
@@ -41,26 +61,29 @@ function plumple(
     return result
 end
 
-function _get_plumple_value(
-    block_structure::BlockStructure,
-    constraints_and_axes::Constraints_and_Axes,
-)
-    n_master = length(constraints_and_axes.variables) * length(block_structure.master_constraints)
+function _get_plumple_value(block_structure::BlockStructure)
+    n_master = length(block_structure.constraints_and_axes.variables) * length(block_structure.master_constraints)
     n_blocks = 0
+    variables_in_block = Set{MOI.VariableIndex}()
     for block in block_structure.blocks
+        empty!(variables_in_block)
         for constraint in block
-            n_blocks = n_blocks + length(constraints_and_axes.constraints_to_variables[constraint])
+            union!(
+                variables_in_block,
+                block_structure.constraints_and_axes.constraints_to_variables[constraint]
+            )
         end
+        n_blocks = n_blocks + length(variables_in_block)*length(block)
     end
     return n_master+n_blocks
 end
 
-# Returns an instance of the struct Constraints_and_axes
+# Returns an instance of the struct Constraints_and_Axes
 function get_constraints_and_axes(model::JuMP.Model)
     constraints = Set{JuMP.ConstraintRef}()
     axes = Set{BlockDecomposition.Axis}()
-    variables = Set{JuMP.MOI.VariableIndex}()
-    constraints_to_axes = Dict{JuMP.ConstraintRef, Set{BlockDecomposition.Axis}}()
+    variables = Set{MOI.VariableIndex}()
+    constraints_to_axes = Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}()
     constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
     constraints_and_axes = Constraints_and_Axes(
                                constraints,
@@ -82,19 +105,13 @@ function get_constraints_and_axes(model::JuMP.Model)
             end
         end
     end
-    constraints_and_axes = Constraints_and_Axes(
-                               constraints,
-                               axes,
-                               variables,
-                               constraints_to_axes,
-                               constraints_to_variables
-                           )
-    add_anonymous_var_con!(constraints_and_axes, model)
+    constraints_and_axes.variables = variables
+    _add_anonymous_var_con!(constraints_and_axes, model)
     return constraints_and_axes
 end
 
 # Add anonymous constraints and axes from the model to constraints_and_axes (car)
-function add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
+function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
     types =  JuMP.list_of_constraint_types(model)
     for t in types
         if t[1] != VariableRef
@@ -117,7 +134,7 @@ function _add_constraint!(
     c::JuMP.ConstraintRef,
     model::JuMP.Model,
     reference_constraints_name::T,
-    ) where T <: JuMP.Containers.DenseAxisArray
+) where T <: JuMP.Containers.DenseAxisArray
     push!(o.constraints, c)
     axes_of_constraint = _get_axes_of_constraint(reference_constraints_name)
     for r in axes_of_constraint
@@ -128,7 +145,7 @@ function _add_constraint!(
 end
 
 function _get_axes_of_constraint(reference_constraints_name::T) where T <: JuMP.Containers.DenseAxisArray
-    axes_of_constraint = Set{BlockDecomposition.Axis}()
+    axes_of_constraint = Array{BlockDecomposition.Axis,1}()
     for a in reference_constraints_name.axes
         if a != 1   # Axes of the form 1:1 do not matter (single constraints)
             push!(axes_of_constraint, Axis(a))
@@ -157,7 +174,8 @@ function get_block_structure(
 
     for c in keys(constraints_and_axes.constraints_to_axes)
         # Check if constraints are constructed over at least one set which is contained in axes
-        if !isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))
+        # if axes is empty annotate everything as master
+        if  isempty(axes) || !isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))
             push!(master_constraints, c)
         else
             push!(vertices, c)
@@ -166,7 +184,7 @@ function get_block_structure(
 
     graph = _create_graph(vertices, constraints_and_axes)
     blocks = _get_connected_components!(graph)
-    block_structure = BlockStructure(master_constraints, axes, blocks, graph)
+    block_structure = BlockStructure(constraints_and_axes, master_constraints, axes, blocks, graph)
     return block_structure
 end
 
@@ -221,6 +239,6 @@ function draw_graph(mgraph::MetaGraph)
     for e in edges(mgraph)
         add_edge!(sgraph, e)
     end
-    t = TikzGraphs.plot(sgraph, labels)
+    t = plot(sgraph, labels)
     save(SVG("graph.svg"),t)
 end

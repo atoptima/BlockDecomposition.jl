@@ -35,16 +35,16 @@ function register_automatic_decomposition(model::JuMP.Model)
         ann = _getannotation(tree, axisids)
         for constraintref in decomposition_structure.blocks[i]
             setannotation!(model, constraintref, ann)
-            union!(variables_in_block,
+            union!(
+                variables_in_block,
                 model.ext[:decomposition_structure].constraints_and_axes.constraints_to_variables[constraintref]
             )
         end
-        for v in variables_in_block 
+        for v in variables_in_block
             setannotation!(model, JuMP.VariableRef(model, v), ann)
         end
         union!(annotated_variables, variables_in_block)
     end
-    
     # Annotate all other variables
     all_variables = MathOptInterface.get(model, MathOptInterface.ListOfVariableIndices())
     _annotate_elements!(model, [JuMP.VariableRef(model, v) for v in collect(setdiff(all_variables, annotated_variables))], tree)

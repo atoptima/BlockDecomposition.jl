@@ -47,7 +47,7 @@ function example_assignment_automatic_decomposition()
     @constraint(model, cov[j in J], sum(x[m, j] for m in M) >= 1)
     @constraint(model, knp[m in M], sum(w[m, j] * x[m, j] for j in J) <= Q[m])
     @objective(model, Min, sum(c[m, j] * x[m, j] for m in M, j in J))
-    @dantzig_wolfe_decomposition(model, decomposition, Axis)
+    decomposition, decomposition_axis = decompose(model)
 
 
     master = getmaster(decomposition)
@@ -55,7 +55,7 @@ function example_assignment_automatic_decomposition()
 
     specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
 
-    return model, x, cov, knp, decomposition, Axis
+    return model, x, cov, knp, decomposition, decomposition_axis
 end
 
 function generalized_assignment_automatic_decomposition(d::GapData)
@@ -70,12 +70,12 @@ function generalized_assignment_automatic_decomposition(d::GapData)
     @objective(model, Min, 
          sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in d.machines))
 
-    @dantzig_wolfe_decomposition(model, decomposition, Axis)
+    decomposition, decomposition_axis = decompose(model)
     master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
     specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
 
-    return model, x, cov, knp, decomposition, Axis
+    return model, x, cov, knp, decomposition, decomposition_axis
 end
 
 # Test pure master variables, constraint without id & variables without id

@@ -152,18 +152,13 @@ function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, 
     end
 end
 
-
 macro dantzig_wolfe_decomposition(args...)
+    if length(args) != 3
+        error("Three arguments expected: model, decomposition name, and axis")
+    end
     node, name, axis = args
     dw_exp = quote
-        if length($args) != 3
-            error("Three arguments expected: model, decomposition name, and axis")
-        end
-        if $node.ext[:automatic_decomposition]
-            $node.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure($node)
-            $axis = BlockDecomposition.Axis(1:length($node.ext[:decomposition_structure].blocks))
-        end
-        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)    # initialize a tree for the current root node
+        $name = BlockDecomposition.decompose_leaf($node, BlockDecomposition.DantzigWolfe, $axis)                                # initialize a tree for the current root node
         BlockDecomposition.register_subproblems!($name, $axis, BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe)
     end
     return esc(dw_exp)
