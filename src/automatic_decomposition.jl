@@ -95,11 +95,11 @@ function get_constraints_and_axes(model::JuMP.Model)
     for k in keys(model.obj_dict)  # Check all names in the model
         # Store single references to constraints in a DenseAxisArray (already done if several constraints are referenced with the same name)
         reference = typeof(model.obj_dict[k]) <: JuMP.Containers.DenseAxisArray ? model.obj_dict[k] : JuMP.Containers.DenseAxisArray([model.obj_dict[k]],1)
-        if typeof(reference[1]) <: JuMP.ConstraintRef
+        if eltype(reference) <: JuMP.ConstraintRef
             for c in reference
                 _add_constraint!(constraints_and_axes, c, model, reference)
             end
-        elseif typeof(reference[1]) <: JuMP.VariableRef
+        elseif eltype(reference) <: JuMP.VariableRef
             for v in reference
                 push!(variables, JuMP.index(v))
             end
