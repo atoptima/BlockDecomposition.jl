@@ -10,6 +10,7 @@ function register_decomposition(model::JuMP.Model)
         register_automatic_decomposition(model)
     else
         tree = gettree(model)
+        tree === nothing && return
         for (key, jump_obj) in model.obj_dict
             _annotate_elements!(model, jump_obj, tree)
         end
@@ -151,30 +152,24 @@ function MOI.get(
     dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
     ci::MOI.ConstraintIndex
 )
-    if MOI.get(dest, MOI.ConstraintName(), ci) == "" # anonymous constraint
-        tree = MOI.get(dest, DecompositionTree())
-        tree === nothing && return nothing
-        return tree.root.master
-    end
+    tree = MOI.get(dest, DecompositionTree())
+    tree === nothing && return nothing
+
     conattr = get(dest.conattr, attribute, nothing)
-    conattr === nothing && return nothing
-    val = get(conattr, ci, nothing)
-    return val
+    conattr === nothing && return tree.root.master
+    return get(conattr, ci, tree.root.master)
 end
 
 function MOI.get(
     dest::MOIU.UniversalFallback, attribute::VariableDecomposition,
     vi::MOI.VariableIndex
 )
-    if MOI.get(dest, MOI.VariableName(), vi) == "" # anonymous constraint
-        tree = MOI.get(dest, DecompositionTree())
-        tree === nothing && return nothing
-        return tree.root.master
-    end
+    tree = MOI.get(dest, DecompositionTree())
+    tree === nothing && return nothing
+
     varattr = get(dest.varattr, attribute, nothing)
-    varattr === nothing && return nothing
-    val = get(varattr, vi, nothing)
-    return val
+    varattr === nothing && return tree.root.master
+    return get(varattr, vi, tree.root.master)
 end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::DecompositionTree)

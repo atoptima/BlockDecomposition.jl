@@ -29,6 +29,7 @@ include("decomposition.jl")
 include("objective.jl")
 include("callbacks.jl")
 include("automatic_decomposition.jl")
+include("utils.jl")
 
 function BlockModel(args...; automatic_decomposition=false, kw...)
     m = JuMP.Model(args...; kw...)

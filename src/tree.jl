@@ -17,6 +17,8 @@ end
 
 getroot(t::Tree) = t.root
 
+MOIU.map_indices(::Function, t::Tree) = t
+
 function generateannotationid(tree)
     tree.ann_current_uid += 1
     return tree.ann_current_uid
@@ -89,7 +91,7 @@ function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, a
 end
 set_decomposition_tree!(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis) = return
 gettree(n::AbstractNode) = n.tree
-gettree(m::JuMP.Model) = m.ext[:decomposition_tree]
+gettree(m::JuMP.Model) = get(m.ext, :decomposition_tree, nothing)
 get_depth(n::AbstractNode) = n.depth
 getoptimizerbuilder(n::AbstractNode) = n.master.optimizer_builder
 getoptimizerbuilder(n::Leaf) = n.problem.optimizer_builder
