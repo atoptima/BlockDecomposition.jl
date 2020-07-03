@@ -26,7 +26,7 @@ function decompose(model::JuMP.Model)
         BlockDecomposition.DwPricingSp,
         BlockDecomposition.DantzigWolfe
     )
-    return decomposition, decomposition_axis
+    return
 end
 
 # Contains all the information about the constraints and variables in a model we might need
