@@ -46,7 +46,6 @@ function example_assignment_automatic_decomposition()
     @constraint(model, cov[j in J], sum(x[m, j] for m in M) >= 1)
     @constraint(model, knp[m in M], sum(w[m, j] * x[m, j] for j in J) <= Q[m])
     @objective(model, Min, sum(c[m, j] * x[m, j] for m in M, j in J))
-    decompose(model)
 
     return model, x, cov, knp
 end
@@ -62,7 +61,6 @@ function generalized_assignment_automatic_decomposition(d::GapData)
 
     @objective(model, Min, 
          sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in d.machines))
-    decompose(model)
 
     return model, x, cov, knp
 end

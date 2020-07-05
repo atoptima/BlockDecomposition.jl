@@ -1,6 +1,6 @@
 function test_automatic_decomposition()
     @testset "Example AP automatic decomposition" begin
-        model, x, cov, knp= example_assignment_automatic_decomposition()
+        model, x, cov, knp = example_assignment_automatic_decomposition()
         try
             JuMP.optimize!(model)
         catch e
@@ -10,7 +10,6 @@ function test_automatic_decomposition()
         # (due to the result of the plumple method that scores decompotions)
         machines = 1:4
         jobs = 1:30
-        
         for j in jobs
             cov_ann = BD.annotation(model, cov[j])
             test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
