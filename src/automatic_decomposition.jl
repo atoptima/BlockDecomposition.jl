@@ -7,7 +7,7 @@ function get_best_block_structure(model::JuMP.Model)
         block_structure = get_block_structure(axes, constraints_and_axes, model)
         push!(block_structures, block_structure)
     end
-    result =  plumple(block_structures, constraints_and_axes)
+    result =  white_score(block_structures, constraints_and_axes)
     return result
 end
 
@@ -48,20 +48,20 @@ struct BlockStructure
     graph::MetaGraph
 end
 
-function plumple(block_structures::Array{BlockStructure,1}, constraints_and_axes::Constraints_and_Axes)
+function white_score(block_structures::Array{BlockStructure,1}, constraints_and_axes::Constraints_and_Axes)
     result = nothing
     best = length(constraints_and_axes.constraints) * length(constraints_and_axes.variables)
     for block_structure in block_structures
-        plumple_value = _get_plumple_value(block_structure)
-        if plumple_value <= best
-            best = plumple_value
+        white_score = _get_white_score(block_structure)
+        if white_score <= best
+            best = white_score
             result = block_structure
         end
     end
     return result
 end
 
-function _get_plumple_value(block_structure::BlockStructure)
+function _get_white_score(block_structure::BlockStructure)
     n_master = length(block_structure.constraints_and_axes.variables) * length(block_structure.master_constraints)
     n_blocks = 0
     variables_in_block = Set{MOI.VariableIndex}()
