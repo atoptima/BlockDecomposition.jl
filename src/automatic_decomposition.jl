@@ -7,7 +7,15 @@ function get_best_block_structure(model::JuMP.Model)
         block_structure = get_block_structure(axes, constraints_and_axes, model)
         push!(block_structures, block_structure)
     end
-    result =  white_score(block_structures, constraints_and_axes)
+    score_type = model.ext[:automatic_decomposition_score_type] 
+    if score_type == 0
+        result =  white_score(block_structures, constraints_and_axes)
+    elseif score_type == 1
+        result = block_border_score(block_structures, constraints_and_axes)
+    else
+        error("Score type ", score_type, " for automatic decomposition is not defined. the
+        available scores are: White Score: 0, Block Border Score: 1")
+    end
     return result
 end
 
@@ -40,7 +48,7 @@ mutable struct Constraints_and_Axes
 end
 
 struct BlockStructure
-    # constraints_and_axes is the same for every possible BlockStructure of a model
+    # Constraints_and_axes is the same for every possible BlockStructure of a model
     constraints_and_axes::Constraints_and_Axes
     master_constraints::Set{JuMP.ConstraintRef}
     master_sets::Array{BlockDecomposition.Axis,1}
@@ -48,7 +56,64 @@ struct BlockStructure
     graph::MetaGraph
 end
 
-function white_score(block_structures::Array{BlockStructure,1}, constraints_and_axes::Constraints_and_Axes)
+# This score is described in: Khaniyev, Taghi, Samir Elhedhli, and Fatih Safa Erenay.
+# "Structure detection in mixed-integer programs." INFORMS Journal on Computing 30.3 (2018): 570-587.
+function block_border_score(
+    block_structures::Array{BlockStructure,1},
+    constraints_and_axes::Constraints_and_Axes
+)
+    result = nothing
+    best = 0
+    for block_structure in block_structures
+        block_border_score = _get_block_border_score(block_structure)
+        if block_border_score > best
+            best = block_border_score
+            result = block_structure
+        end
+    end
+    return result
+end
+
+function _get_block_border_score(block_structure::BlockStructure)
+    # m describes the total number of nonzero entries in the blocks,
+    # e gives the numberof nonzero entries for each block
+    e =  Array{Int64,1}()
+    m = 0
+    lambda = 5
+    for block in block_structure.blocks
+        n = _get_n_nonzero_entries(block, block_structure.constraints_and_axes)
+        push!(e, n)
+        m += n
+    end
+    q_a = 0
+    for i in 1:length(block_structure.blocks)
+        q_a += (e[i] / m) * (1 - (e[i] / m))
+    end
+    n_master_constraints =  length(block_structure.master_constraints)
+    n_constraints = length(block_structure.constraints_and_axes.constraints)
+    p_a = MathConstants.e^(-1 * lambda * (n_master_constraints / n_constraints))
+    println("Scores for decomposition with master sets ", block_structure.master_sets)
+    println("D = ", q_a, " P = ", p_a)
+    gamma = q_a*p_a
+    return gamma
+end
+
+# Computes the number of nonzero entries in the given constraints
+function _get_n_nonzero_entries(
+    constraints::Set{JuMP.ConstraintRef},
+    constraints_and_axes::Constraints_and_Axes
+)
+    result = 0
+    for c in constraints
+        result = result + length(constraints_and_axes.constraints_to_variables[c])
+    end
+    return result
+end
+
+function white_score(
+    block_structures::Array{BlockStructure,1},
+    constraints_and_axes::Constraints_and_Axes
+)
     result = nothing
     best = length(constraints_and_axes.constraints) * length(constraints_and_axes.variables)
     for block_structure in block_structures
