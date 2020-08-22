@@ -12,9 +12,11 @@ function get_best_block_structure(model::JuMP.Model)
         result =  white_score(block_structures, constraints_and_axes)
     elseif score_type == 1
         result = block_border_score(block_structures, constraints_and_axes)
+    elseif score_type == 2
+        result = relative_border_area_score(block_structures, constraints_and_axes)
     else
-        error("Score type ", score_type, " for automatic decomposition is not defined. the
-        available scores are: White Score: 0, Block Border Score: 1")
+        error("Score type ", score_type, " for automatic decomposition is not defined.
+        The available scores are: White Score: 0, Block Border Score: 1, Relative Border Area Score: 2")
     end
     return result
 end
@@ -54,6 +56,32 @@ struct BlockStructure
     master_sets::Array{BlockDecomposition.Axis,1}
     blocks::Array{Set{JuMP.ConstraintRef},1}
     graph::MetaGraph
+end
+
+# This score is described in: Bergner, Martin, et al. 
+# "Automatic Dantzig–Wolfe reformulation of mixed integer programs."
+# Mathematical Programming 149.1-2 (2015): 391-424.
+function relative_border_area_score(
+    block_structures::Array{BlockStructure,1},
+    constraints_and_axes::Constraints_and_Axes
+    )
+    result = nothing
+    best_score = 1
+    for block_structure in block_structures
+        recent_score = _get_relative_border_area_score(block_structure)
+        if recent_score < best_score
+            best_score = recent_score
+            result = block_structure
+        end
+    end
+    return result
+end
+
+function _get_relative_border_area_score(block_structure::BlockStructure)
+    n_linking_constraints = length(block_structure.master_constraints)
+    n_variables = length(block_structure.constraints_and_axes.variables)
+    n_constraints = length(block_structure.constraints_and_axes.constraints)
+    score = (n_linking_constraints*n_variables)/(n_variables*n_constraints)
 end
 
 # This score is described in: Khaniyev, Taghi, Samir Elhedhli, and Fatih Safa Erenay.
