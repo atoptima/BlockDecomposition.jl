@@ -54,6 +54,8 @@ function Axis(name::Symbol, container::A) where {T, A <: AbstractArray{T}}
     return Axis{name, T}(name, indices)
 end
 
+Axis(container) = Axis(Symbol(), container)
+
 name(axis::Axis) =  axis.name
 iterate(axis::Axis) = iterate(axis.container)
 iterate(axis::Axis, state) = iterate(axis.container, state)
@@ -61,6 +63,8 @@ length(axis::Axis) = length(axis.container)
 getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
 vcat(A::BlockDecomposition.Axis, B::AbstractArray) = vcat(A.container, B)
+Base.isequal(i::Axis, j::Axis) = isequal(i.container, j.container)
+Base.hash(i::Axis, h::UInt) = hash(i.container, h)
 
 function _generate_axis(name, container)
     sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
@@ -79,4 +83,3 @@ macro axis(args...)
     exp = :($name = $(_generate_axis(name, container)))
     return esc(exp)
 end
-
