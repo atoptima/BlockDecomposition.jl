@@ -36,9 +36,7 @@ function model_factory(::Val{true}, optimizer; kw...)::JuMP.Model
 end
 
 function model_factory(::Val{false}, args...; kw...)::JuMP.Model
-    m = JuMP.Model(args...; kw...)
-    JuMP.set_optimize_hook(m, optimize!)
-    return m
+    return JuMP.Model(args...; kw...)
 end
 
 function BlockModel(args...; kw...)
