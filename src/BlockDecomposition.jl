@@ -22,8 +22,28 @@ include("objective.jl")
 include("callbacks.jl")
 include("utils.jl")
 
-function BlockModel(args...; kw...)
+function model_factory(::Val{true}, optimizer; kw...)::JuMP.Model
+    m = JuMP.direct_model(optimizer.optimizer_constructor())
+    for (param, val) in optimizer.params
+        set_optimizer_attribute(m, param, val)
+    end
+    for (key, val) in kw
+        if key !== :direct_model
+            @warn "Unsupported keyword argument $key when creating a BlockModel with direct_model=true."
+        end
+    end
+    return m
+end
+
+function model_factory(::Val{false}, args...; kw...)::JuMP.Model
     m = JuMP.Model(args...; kw...)
+    JuMP.set_optimize_hook(m, optimize!)
+    return m
+end
+
+function BlockModel(args...; kw...)
+    dm = haskey(kw, :direct_model) ? kw[:direct_model] : false
+    m = model_factory(Val(dm), args..., kw...)
     JuMP.set_optimize_hook(m, optimize!)
     return m
 end
