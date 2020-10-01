@@ -163,7 +163,7 @@ function dummymodel3()
     B = 1:6
     @variable(model, x[a in A, b in B], Int)
     mast = @constraint(model, sum(x[a,b] for a in A, b in B) >= 5)
-    @constraint(model, sp[a in A], sum(x[a,b] for b in B) == 1)
+    sp = @constraint(model, [a in A], sum(x[a,b] for b in B) == 1) # anonymous constraints
     @objective(model, Min, sum(x[a,b] for a in A, b in B))
     @dantzig_wolfe_decomposition(model, dec, A)
     return model, x, mast, sp, dec
@@ -218,6 +218,8 @@ function test_dummy_model_decompositions()
         end
         mast_annotation = BD.annotation(model, mast)
         test_annotation(mast_annotation, BD.Master, BD.DantzigWolfe, 1, 1)
+        sp_annotation = BD.annotation(model, sp[1])
+        test_annotation(sp_annotation, BD.Master, BD.DantzigWolfe, 1, 1)
     end
     return
 end
