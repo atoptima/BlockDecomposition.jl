@@ -41,7 +41,7 @@ end
 
 function BlockModel(args...; kw...)
     dm = haskey(kw, :direct_model) ? kw[:direct_model] : false
-    m = model_factory(Val(dm), args..., kw...)
+    m = model_factory(Val(dm), args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
     return m
 end
