@@ -62,6 +62,8 @@ getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
 vcat(A::BlockDecomposition.Axis, B::AbstractArray) = vcat(A.container, B)
 
+×(args...) = Iterators.product(args...)
+
 function _generate_axis(name, container)
     sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
     return :(BlockDecomposition.Axis($sym_name, $container))
@@ -76,7 +78,15 @@ macro axis(args...)
     if typeof(name) != Symbol
         error("First argument of @axis is incorrect. The axis name is expected.")
     end
-    exp = :($name = $(_generate_axis(name, container)))
+
+    container_exp = :()
+    if container isa Expr && container.head == :call
+        container_exp = :(collect($container))
+    else
+        container_exp = :($container)
+    end
+
+    exp = :($name = $(_generate_axis(name, container_exp)))
     return esc(exp)
 end
 

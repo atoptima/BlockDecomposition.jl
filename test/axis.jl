@@ -31,4 +31,21 @@ function axis_declarations()
         @test indice(C[1]) == (1,2)
         @test indice(C[end]) == (4,1)
     end
+
+    # Cartesian product
+    E = 1:3
+    F = ['a', 'b', 'c']
+    @axis(G, E × F)
+
+    @testset "Cartesian product axis" begin
+        @test indice(G[1]) == (1, 'a')
+        @test indice(G[2]) == (2, 'a')
+        @test indice(G[3]) == (3, 'a')
+        @test indice(G[4]) == (1, 'b')
+        @test indice(G[5]) == (2, 'b')
+        @test indice(G[6]) == (3, 'b')
+        @test indice(G[7]) == (1, 'c')
+        @test indice(G[8]) == (2, 'c')
+        @test indice(G[9]) == (3, 'c')
+    end
 end

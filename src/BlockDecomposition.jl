@@ -8,7 +8,7 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 const JC = JuMP.Containers
 
-export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems,
+export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems, ×,
        indice, objectiveprimalbound!, objectivedualbound!
 
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
