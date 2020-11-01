@@ -1,26 +1,3 @@
-# Finds the best decomposition structure of to be used by the solver 
-function get_best_block_structure(model::JuMP.Model)
-    constraints_and_axes = get_constraints_and_axes(model)
-    block_structures = Array{BlockStructure,1}()
-    axesSets = collect(powerset(collect(constraints_and_axes.axes)))
-    for axes in axesSets
-        block_structure = get_block_structure(axes, constraints_and_axes, model)
-        push!(block_structures, block_structure)
-    end
-    score_type = model.ext[:automatic_decomposition_score_type] 
-    if score_type == 0
-        result =  white_score(block_structures, constraints_and_axes)
-    elseif score_type == 1
-        result = block_border_score(block_structures, constraints_and_axes)
-    elseif score_type == 2
-        result = relative_border_area_score(block_structures, constraints_and_axes)
-    else
-        error("Score type ", score_type, " for automatic decomposition is not defined.
-        The available scores are: White Score: 0, Block Border Score: 1, Relative Border Area Score: 2")
-    end
-    return result
-end
-
 # Decomposes the given JuMP Model automatically
 function decompose(model::JuMP.Model)
     model.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure(model)
@@ -37,6 +14,38 @@ function decompose(model::JuMP.Model)
         BlockDecomposition.DantzigWolfe
     )
     return
+end
+
+# Finds the best decomposition structure to be used by the solver
+function get_best_block_structure(model::JuMP.Model)
+    block_structures = get_all_block_structures(model)
+    score_type = model.ext[:automatic_decomposition_score_type]
+    if score_type == 0 # White Score
+        white_scores =  BlockDecomposition.white_scores(block_structures)
+        result = block_structures[argmax(white_scores)]
+    elseif score_type == 1 # Block Border Score
+        block_border_scores = BlockDecomposition.block_border_scores(block_structures)
+        result = block_structures[argmax(block_border_scores)]
+    elseif score_type == 2 # Relative Border Area Score
+        relative_border_area_scores = BlockDecomposition.relative_border_area_scores(block_structures)
+        result = block_structures[argmin(relative_border_area_scores)]
+    else
+        error("Score type ", score_type, " for automatic decomposition is not defined.
+        The available scores are: White Score: 0, Block Border Score: 1, Relative Border Area Score: 2")
+    end
+    return result
+end
+
+# Returns all possible block structures of the given model
+function get_all_block_structures(model::JuMP.Model)
+    constraints_and_axes = get_constraints_and_axes(model)
+    block_structures = Array{BlockStructure,1}()
+    axesSets = collect(powerset(collect(constraints_and_axes.axes)))
+    for axes in axesSets
+        block_structure = get_block_structure(axes, constraints_and_axes, model)
+        push!(block_structures, block_structure)
+    end
+    return block_structures
 end
 
 # Contains all the information about the constraints and variables in a model we might need
@@ -58,48 +67,33 @@ struct BlockStructure
     graph::MetaGraph
 end
 
+
+
 # This score is described in: Bergner, Martin, et al. 
 # "Automatic Dantzig–Wolfe reformulation of mixed integer programs."
 # Mathematical Programming 149.1-2 (2015): 391-424.
-function relative_border_area_score(
-    block_structures::Array{BlockStructure,1},
-    constraints_and_axes::Constraints_and_Axes
-    )
-    result = nothing
-    best_score = 1
-    for block_structure in block_structures
-        recent_score = _get_relative_border_area_score(block_structure)
-        if recent_score < best_score
-            best_score = recent_score
-            result = block_structure
-        end
+function relative_border_area_scores(block_structures::Array{BlockStructure,1})
+    scores = Array{Float64,1}(undef, length(block_structures))
+    for i in eachindex(block_structures)
+        scores[i] = _get_relative_border_area_score(block_structures[i])
     end
-    return result
+    return scores
 end
 
 function _get_relative_border_area_score(block_structure::BlockStructure)
     n_linking_constraints = length(block_structure.master_constraints)
-    n_variables = length(block_structure.constraints_and_axes.variables)
     n_constraints = length(block_structure.constraints_and_axes.constraints)
-    score = (n_linking_constraints*n_variables)/(n_variables*n_constraints)
+    score = n_linking_constraints/n_constraints
 end
 
 # This score is described in: Khaniyev, Taghi, Samir Elhedhli, and Fatih Safa Erenay.
 # "Structure detection in mixed-integer programs." INFORMS Journal on Computing 30.3 (2018): 570-587.
-function block_border_score(
-    block_structures::Array{BlockStructure,1},
-    constraints_and_axes::Constraints_and_Axes
-)
-    result = nothing
-    best = 0
-    for block_structure in block_structures
-        block_border_score = _get_block_border_score(block_structure)
-        if block_border_score > best
-            best = block_border_score
-            result = block_structure
-        end
+function block_border_scores(block_structures::Array{BlockStructure,1})
+    scores = Array{Float64,1}(undef, length(block_structures))
+    for i in eachindex(block_structures)
+        scores[i] = _get_block_border_score(block_structures[i])
     end
-    return result
+    return scores
 end
 
 function _get_block_border_score(block_structure::BlockStructure)
@@ -120,8 +114,6 @@ function _get_block_border_score(block_structure::BlockStructure)
     n_master_constraints =  length(block_structure.master_constraints)
     n_constraints = length(block_structure.constraints_and_axes.constraints)
     p_a = MathConstants.e^(-1 * lambda * (n_master_constraints / n_constraints))
-    println("Scores for decomposition with master sets ", block_structure.master_sets)
-    println("D = ", q_a, " P = ", p_a)
     gamma = q_a*p_a
     return gamma
 end
@@ -138,20 +130,13 @@ function _get_n_nonzero_entries(
     return result
 end
 
-function white_score(
-    block_structures::Array{BlockStructure,1},
-    constraints_and_axes::Constraints_and_Axes
-)
-    result = nothing
-    best = length(constraints_and_axes.constraints) * length(constraints_and_axes.variables)
-    for block_structure in block_structures
-        white_score = _get_white_score(block_structure)
-        if white_score <= best
-            best = white_score
-            result = block_structure
-        end
+# Returns the amount of "black" in the matrix
+function white_scores(block_structures::Array{BlockStructure,1})
+    scores = Array{Float64,1}(undef, length(block_structures))
+    for i in eachindex(block_structures)
+        scores[i] = _get_white_score(block_structures[i])
     end
-    return result
+    return scores
 end
 
 function _get_white_score(block_structure::BlockStructure)
@@ -168,7 +153,10 @@ function _get_white_score(block_structure::BlockStructure)
         end
         n_blocks = n_blocks + length(variables_in_block)*length(block)
     end
-    return n_master+n_blocks
+    coefficient_matrix_size = length(block_structure.constraints_and_axes.constraints) * length(block_structure.constraints_and_axes.variables)
+    black_score = (n_master+n_blocks)/coefficient_matrix_size
+    white_score = 1-black_score
+    return white_score
 end
 
 # Returns an instance of the struct Constraints_and_Axes
@@ -186,8 +174,7 @@ function get_constraints_and_axes(model::JuMP.Model)
                                constraints_to_variables
                             )
     for k in keys(model.obj_dict)  # Check all names in the model
-        # Store single references to constraints in a DenseAxisArray (already done if several constraints are referenced with the same name)
-        reference = typeof(model.obj_dict[k]) <: JuMP.Containers.DenseAxisArray ? model.obj_dict[k] : JuMP.Containers.DenseAxisArray([model.obj_dict[k]],1)
+        reference = _get_constraint_reference(model, k)
         if eltype(reference) <: JuMP.ConstraintRef
             for c in reference
                 _add_constraint!(constraints_and_axes, c, model, reference)
@@ -203,6 +190,18 @@ function get_constraints_and_axes(model::JuMP.Model)
     return constraints_and_axes
 end
 
+# Convert the constraint reference to a DenseAxisArrays
+function _get_constraint_reference(model::JuMP.Model, k)
+    if typeof(model.obj_dict[k]) <: JuMP.Containers.DenseAxisArray
+        return model.obj_dict[k]
+    elseif typeof(model.obj_dict[k]) <: Array
+        axs = axes(model.obj_dict[k])
+        return JuMP.Containers.DenseAxisArray(model.obj_dict[k], axs...)
+    else
+        return error("Type of constraint reference can not be handled.") # Can this case happen?
+    end
+end
+
 # Add anonymous constraints and axes from the model to constraints_and_axes (car)
 function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
     types =  JuMP.list_of_constraint_types(model)
@@ -211,7 +210,7 @@ function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
             for c in JuMP.all_constraints(model, t[1], t[2])
                 if !in(c, car.constraints)
                     push!(car.constraints, c)
-                    car.constraints_to_axes[c] = Set{BlockDecomposition.Axis}()
+                    car.constraints_to_axes[c] = Array{BlockDecomposition.Axis,1}()
                     car.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
                 end
             end
@@ -321,17 +320,3 @@ function _create_graph(
     return graph
 end
 
-function draw_graph(mgraph::MetaGraph)
-    sgraph = SimpleGraph(nv(mgraph))
-    labels = Array{String}(undef, nv(mgraph))
-    i = 1
-    for v in collect(vertices(mgraph))
-        labels[i] = convert(String, repr(mgraph[i, :constraint_ref]))
-        i = i + 1
-    end
-    for e in edges(mgraph)
-        add_edge!(sgraph, e)
-    end
-    t = plot(sgraph, labels)
-    save(SVG("graph.svg"),t)
-end

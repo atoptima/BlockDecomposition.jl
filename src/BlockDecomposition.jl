@@ -6,8 +6,6 @@ using LightGraphs: SimpleGraph, add_vertices!, nv
 using MathOptInterface
 using MetaGraphs: MetaGraph, add_edge!, connected_components, edges, intersect,
     set_indexing_prop!, set_prop!, vertices
-using TikzGraphs: plot
-using TikzPictures: SVG, save
 
 import MathOptInterface
 import MathOptInterface.Utilities
