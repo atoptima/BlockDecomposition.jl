@@ -1,6 +1,8 @@
 sp_pricing_oracle() = nothing
 
-struct MokeOptimizer <: MOI.AbstractOptimizer end
+struct MockOptimizer <: MOI.AbstractOptimizer end
+
+MOI.is_empty(model::MockOptimizer) = true
 
 function test_assignsolver()
 
@@ -16,8 +18,8 @@ function test_assignsolver()
         specify!(subproblems[2], solver = nothing)
         @test BD.getoptimizerbuilder(subproblems[2].annotation) === nothing
         @test BD.getpricingoracle(subproblems[2].annotation) === nothing
-        specify!(subproblems[3], solver = MokeOptimizer)
-        @test BD.getoptimizerbuilder(subproblems[3].annotation) == MokeOptimizer()
+        specify!(subproblems[3], solver = MockOptimizer)
+        @test BD.getoptimizerbuilder(subproblems[3].annotation) == MockOptimizer()
         @test BD.getpricingoracle(subproblems[2].annotation) === nothing
     end
 end
