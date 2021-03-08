@@ -49,10 +49,10 @@ function Base.show(io::IO, m::SubproblemForm)
     return
 end
 
-function _specify!(sp::SubproblemForm, lm::Real, um::Real, opt::Type{<:MOI.AbstractOptimizer})
+function _specify!(sp::SubproblemForm, lm::Real, um::Real, opt::Union{MOI.OptimizerWithAttributes, MOI.AbstractOptimizer})
     setlowermultiplicity!(sp.annotation, lm)
     setuppermultiplicity!(sp.annotation, um)
-    setoptimizerbuilder!(sp.annotation, opt())
+    setoptimizerbuilder!(sp.annotation, MOI._instantiate_and_check(opt))
     setpricingoracle!(sp.annotation, nothing)
 end
 
@@ -66,7 +66,7 @@ end
 
 function specify!(
     sp::SubproblemForm; lower_multiplicity::Real = 1, 
-    upper_multiplicity::Real = 1, solver::Union{Nothing, Function, Type{<:MOI.AbstractOptimizer}} = nothing
+    upper_multiplicity::Real = 1, solver::Union{Nothing, Function, MOI.OptimizerWithAttributes, MOI.AbstractOptimizer} = nothing
 )
     _specify!(sp, lower_multiplicity, upper_multiplicity, solver)
     return
