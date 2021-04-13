@@ -21,7 +21,7 @@ end
 # Finds the best decomposition structure to be used by the solver
 function get_best_block_structure(model::JuMP.Model)
     block_structures = get_all_block_structures(model)
-    score_type = model.ext[:automatic_decomposition_score_type]
+    score_type = model.ext[:automatic_dantzig_wolfe_score]
     if score_type == 0 # White Score
         white_scores =  BlockDecomposition.white_scores(block_structures)
         result = block_structures[argmax(white_scores)]
@@ -33,9 +33,9 @@ function get_best_block_structure(model::JuMP.Model)
         result = block_structures[argmin(relative_border_area_scores)]
     else
         error(
-            "Score type ", score_type, " for automatic decomposition is not defined.
+            "Score type ", score_type, " for automatic Dantzig-Wolfe decomposition is not defined.
             The available scores are:
-            White Score: 0, Block Border Score: 1, Relative Border Area Score: 2"
+            White Score: 0, Block-Border Score: 1, Relative Border Area Score: 2"
         )
     end
     return result
@@ -155,7 +155,7 @@ function _get_n_nonzero_entries(
     return result
 end
 
-# Returns the amount of "black" in the matrix
+# Returns the relative amount of "white" in the matrix
 function white_scores(block_structures::Array{BlockStructure,1})
     scores = Array{Float64,1}(undef, length(block_structures))
     for i in eachindex(block_structures)

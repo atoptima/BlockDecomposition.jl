@@ -26,19 +26,19 @@ include("formulations.jl")
 include("decomposition.jl")
 include("objective.jl")
 include("callbacks.jl")
-include("automatic_decomposition.jl")
+include("automatic_dantzig_wolfe.jl")
 include("utils.jl")
 
-function BlockModel(args...; automatic_decomposition = false, automatic_decomposition_score_type = 0, kw...)
+function BlockModel(args...; automatic_dantzig_wolfe = false, automatic_dantzig_wolfe_score = 0, kw...)
     m = JuMP.Model(args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
-    m.ext[:automatic_decomposition] = automatic_decomposition
-    m.ext[:automatic_decomposition_score_type] = automatic_decomposition_score_type
+    m.ext[:automatic_dantzig_wolfe] = automatic_dantzig_wolfe
+    m.ext[:automatic_dantzig_wolfe_score] = automatic_dantzig_wolfe_score
     return m
 end
 
 function optimize!(m::JuMP.Model)
-    if m.ext[:automatic_decomposition]
+    if m.ext[:automatic_dantzig_wolfe]
         decompose(m)
     end
     register_decomposition(m)

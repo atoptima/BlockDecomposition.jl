@@ -1,6 +1,6 @@
-function test_automatic_decomposition()
-    @testset "Example AP automatic decomposition" begin
-        model, x, cov, knp = example_assignment_automatic_decomposition()
+function test_automatic_dantzig_wolfe()
+    @testset "Example AP automatic Dantzig-Wolfe decomposition" begin
+        model, x, cov, knp = example_assignment_automatic_dantzig_wolfe()
         try
             JuMP.optimize!(model)
         catch e

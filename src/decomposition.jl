@@ -6,8 +6,8 @@ which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
-    if model.ext[:automatic_decomposition]
-        register_automatic_decomposition(model)
+    if model.ext[:automatic_dantzig_wolfe]
+        register_automatic_dantzig_wolfe(model)
     else
         tree = gettree(model)
         tree === nothing && return
@@ -18,7 +18,7 @@ function register_decomposition(model::JuMP.Model)
     return
 end
 
-function register_automatic_decomposition(model::JuMP.Model)
+function register_automatic_dantzig_wolfe(model::JuMP.Model)
     tree = gettree(model)
     # Annotate master constraints
     decomposition_structure = model.ext[:decomposition_structure]
