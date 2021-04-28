@@ -1,3 +1,8 @@
+
+# Available scores that can be used in an automatic Dantzig-Wolfe decomposition
+# inaktive means that automatic Dantzig-Wolfe is not used
+@enum(AutoDwStrategy, inaktive, white_score, block_border_score, relative_border_area_score)
+
 # Decomposes the given JuMP Model automatically
 function decompose(model::JuMP.Model)
     model.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure(model)
@@ -20,23 +25,18 @@ end
 
 # Finds the best decomposition structure to be used by the solver
 function get_best_block_structure(model::JuMP.Model)
+    @assert(model.ext[:automatic_dantzig_wolfe] != inaktive)
     block_structures = get_all_block_structures(model)
-    score_type = model.ext[:automatic_dantzig_wolfe_score]
-    if score_type == 0 # White Score
+    score_type = model.ext[:automatic_dantzig_wolfe]
+    if score_type == white_score
         white_scores =  BlockDecomposition.white_scores(block_structures)
         result = block_structures[argmax(white_scores)]
-    elseif score_type == 1 # Block Border Score
+    elseif score_type == block_border_score
         block_border_scores = BlockDecomposition.block_border_scores(block_structures)
         result = block_structures[argmax(block_border_scores)]
-    elseif score_type == 2 # Relative Border Area Score
+    elseif score_type == relative_border_area_score
         relative_border_area_scores = BlockDecomposition.relative_border_area_scores(block_structures)
         result = block_structures[argmin(relative_border_area_scores)]
-    else
-        error(
-            "Score type ", score_type, " for automatic Dantzig-Wolfe decomposition is not defined.
-            The available scores are:
-            White Score: 0, Block-Border Score: 1, Relative Border Area Score: 2"
-        )
     end
     return result
 end

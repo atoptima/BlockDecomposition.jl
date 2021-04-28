@@ -14,10 +14,10 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 const JC = JuMP.Containers
 
-export BlockModel, annotation, specify!, decompose,gettree,
+export BlockModel, annotation, specify!, decompose, gettree,
     getmaster, getsubproblems, indice, objectiveprimalbound!, objectivedualbound!
-
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
+export AutoDwStrategy
 
 include("axis.jl")
 include("annotations.jl")
@@ -29,16 +29,15 @@ include("callbacks.jl")
 include("automatic_dantzig_wolfe.jl")
 include("utils.jl")
 
-function BlockModel(args...; automatic_dantzig_wolfe = false, automatic_dantzig_wolfe_score = 0, kw...)
+function BlockModel(args...; automatic_dantzig_wolfe::AutoDwStrategy = inaktive, kw...)
     m = JuMP.Model(args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
     m.ext[:automatic_dantzig_wolfe] = automatic_dantzig_wolfe
-    m.ext[:automatic_dantzig_wolfe_score] = automatic_dantzig_wolfe_score
     return m
 end
 
 function optimize!(m::JuMP.Model)
-    if m.ext[:automatic_dantzig_wolfe]
+    if m.ext[:automatic_dantzig_wolfe] != inaktive
         decompose(m)
     end
     register_decomposition(m)

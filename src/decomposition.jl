@@ -6,7 +6,7 @@ which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
-    if model.ext[:automatic_dantzig_wolfe]
+    if model.ext[:automatic_dantzig_wolfe] != inaktive
         register_automatic_dantzig_wolfe(model)
     else
         tree = gettree(model)
