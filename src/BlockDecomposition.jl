@@ -38,7 +38,7 @@ end
 
 function optimize!(m::JuMP.Model)
     if m.ext[:automatic_dantzig_wolfe] != inaktive
-        decompose(m)
+        automatic_dw_decomposition!(m)
     end
     register_decomposition(m)
     return JuMP.optimize!(m, ignore_optimize_hook = true)

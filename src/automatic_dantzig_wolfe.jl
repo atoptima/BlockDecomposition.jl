@@ -4,7 +4,7 @@
 @enum(AutoDwStrategy, inaktive, white_score, block_border_score, relative_border_area_score)
 
 # Decomposes the given JuMP Model automatically
-function decompose(model::JuMP.Model)
+function automatic_dw_decomposition!(model::JuMP.Model)
     model.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure(model)
     decomposition_axis = BlockDecomposition.Axis(
         1:length(model.ext[:decomposition_structure].blocks)
@@ -124,11 +124,11 @@ end
 function _get_block_border_score(block_structure::BlockStructure)
     # m describes the total number of nonzero entries in the blocks,
     # e gives the numberof nonzero entries for each block
-    e =  Array{Int64,1}()
+    e =  Int64[]
     m = 0
     lambda = 5
     for block in block_structure.blocks
-        n = _get_n_nonzero_entries(block, block_structure.constraints_and_axes)
+        n = _get_nb_nonzero_entries(block, block_structure.constraints_and_axes)
         push!(e, n)
         m += n
     end
@@ -144,7 +144,7 @@ function _get_block_border_score(block_structure::BlockStructure)
 end
 
 # Computes the number of nonzero entries in the given constraints
-function _get_n_nonzero_entries(
+function _get_nb_nonzero_entries(
     constraints::Set{JuMP.ConstraintRef},
     constraints_and_axes::Constraints_and_Axes
 )
