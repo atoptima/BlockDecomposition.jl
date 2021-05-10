@@ -51,6 +51,17 @@ function optimize!(m::JuMP.Model)
     return JuMP.optimize!(m, ignore_optimize_hook = true)
 end
 
+"""
+    annotation(node)
+
+Return the annotation that describes the master/subproblem of a given node of
+the decomposition tree.
+
+    annotation(model, variable)
+    annotation(model, constraint)
+
+Return the subproblem membership of a variable or a constraint.
+"""
 function annotation(model::JuMP.Model, objref::JuMP.ConstraintRef)
     MOI.get(model, ConstraintDecomposition(), objref)
 end

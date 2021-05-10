@@ -4,6 +4,8 @@
 Assign to each variable and constraint an annotation indicating in
 which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
+
+This method is called by the `JuMP.optimize!` hook.
 """
 function register_decomposition(model::JuMP.Model)
     # Link to the tree
