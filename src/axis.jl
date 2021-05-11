@@ -37,8 +37,26 @@ Base.isless(i::AxisId{N,T}, j::T) where {N,T} = isless(i.indice, j)
 Base.:(==)(i::T, j::AxisId{N,T}) where {N,T} = i == j.indice
 Base.:(==)(i::AxisId{N,T}, j::T) where {N,T} = i.indice == j
 
+# Allow matching of AxisId key in the DenseAxisArray
+Base.getindex(
+    ax::JuMP.Containers._AxisLookup{<:Base.OneTo}, 
+    k::AxisId{Name, T}
+) where {Name,T<:Integer} = getindex(ax, k.indice)
+
+Base.getindex(
+    x::JuMP.Containers._AxisLookup{Tuple{T,T}},
+    key::AxisId{Name,T},
+) where {Name, T} = getindex(x, key.indice)
+
+Base.getindex(
+    x::JuMP.Containers._AxisLookup{Dict{K,Int}}, 
+    key::AxisId{Name,K}
+) where {Name,K} = getindex(x, key.indice)
+
+# Iterate over the AxisId
 iterate(i::AxisId) = (i, nothing)
 iterate(i::AxisId, ::Any) = nothing
+
 Base.show(io::IO, i::AxisId) = show(io, i.indice)
 
 struct Axis{Name, T}

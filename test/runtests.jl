@@ -17,12 +17,14 @@ function test_annotation(ann::BD.Annotation, F::Type{<:BD.Formulation},
 end
 
 include("axis.jl")
+include("containers.jl")
 include("formulations.jl")
 include("dantzigwolfe.jl")
 include("benders.jl")
 include("assignsolver.jl")
 
 axis_declarations()
+test_JuMP_containers()
 test_dantzig_wolfe_different()
 test_dantzig_wolfe_identical()
 test_dummy_model_decompositions()
