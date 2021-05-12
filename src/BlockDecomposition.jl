@@ -60,7 +60,7 @@ the decomposition tree.
     annotation(model, variable)
     annotation(model, constraint)
 
-Return the subproblem membership of a variable or a constraint.
+Return the subproblem to which a variable or a constraint belongs.
 """
 function annotation(model::JuMP.Model, objref::JuMP.ConstraintRef)
     MOI.get(model, ConstraintDecomposition(), objref)

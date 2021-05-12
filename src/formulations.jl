@@ -92,7 +92,7 @@ Method that allows the user to specify additional property of the subproblems.
 
 The multiplicity of `subproblem` is the number of times that the same independant
 block shaped by the subproblem in the coefficient matrix appears in the model.
-It is also the number of solutions to the subproblem can appear in the solution 
+It is equivalent to the number of solutions to the subproblem that can appear in the solution 
 of the original problem.
 
 The solver of the subproblem is the way the subproblem will be optimized. It can
