@@ -4,12 +4,7 @@ branchingpriority!(model, x::JuMP.VariableRef, branching_priority::Int) = MOI.se
     model, VarBranchingPriority(), x, branching_priority
 )
 
-branchingpriority!(model, x::Array{JuMP.VariableRef}, branching_priority::Int) =
-branchingpriority!.(model, x, branching_priority)
-
 branchingpriority(model, x::JuMP.VariableRef) = MOI.get(model, VarBranchingPriority(), x)
-
-branchingpriority(model, x::Array{JuMP.VariableRef}) = branchingpriority(model, x[1])
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::VarBranchingPriority, vi::MOI.VariableIndex, value
