@@ -87,6 +87,33 @@ function _generate_axis(name, container)
     return :(BlockDecomposition.Axis($sym_name, $container))
 end
 
+"""
+    @axis(name, collection)
+
+Declare `collection` as an index-set of subproblems. 
+You can access the axis using the variable `name`.
+
+# Examples
+```julia-repl
+julia> @axis(K, 1:5)
+BlockDecomposition.Axis{:K, Int64}(:K, BlockDecomposition.AxisId{:K, Int64}[1, 2, 3, 4, 5])
+```
+
+In this example, we declare an axis named `K` that contains 5 entries. 
+The index-set of the subproblems is `[1, 2, 3, 4, 5]`.
+
+```julia-repl
+julia> K[1]
+1
+
+julia> typeof(K[1])
+BlockDecomposition.AxisId{:K, Int64}
+```
+
+The elements of the axis are `AxisId`. The user must use `AxisId` in the indices
+of the variables and the constraints because BlockDecomposition use them to 
+decompose the MIP.
+"""
 macro axis(args...)
     nbargs = length(args)
     nbargs > 2 && error("Axis declaration: too much arguments.")
