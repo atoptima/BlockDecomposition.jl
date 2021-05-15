@@ -28,7 +28,6 @@ function MOI.set(
     dest::MOIU.UniversalFallback, attribute::VarBranchingPriority, vi::MOI.VariableIndex, value
 )
     if !haskey(dest.varattr, attribute)
-        println("blabla")
         dest.varattr[attribute] = Dict{MOI.VariableIndex, Float64}()
     end
     dest.varattr[attribute][vi] = value
