@@ -65,20 +65,6 @@ function Base.show(io::IO, m::SubproblemForm)
     return
 end
 
-function _specify!(sp::SubproblemForm, lm::Real, um::Real, opt::Union{MOI.OptimizerWithAttributes, Type{<:MOI.AbstractOptimizer}})
-    setlowermultiplicity!(sp.annotation, lm)
-    setuppermultiplicity!(sp.annotation, um)
-    setoptimizerbuilder!(sp.annotation, MOI._instantiate_and_check(opt))
-    setpricingoracle!(sp.annotation, nothing)
-end
-
-function _specify!(sp::SubproblemForm, lm::Real, um::Real, oracle::Union{Nothing,Function})
-    setlowermultiplicity!(sp.annotation, lm)
-    setuppermultiplicity!(sp.annotation, um)
-    setpricingoracle!(sp.annotation, oracle)
-    setoptimizerbuilder!(sp.annotation, nothing)
-    return
-end
 
 """
     specify!(
@@ -99,12 +85,44 @@ The solver of the subproblem is the way the subproblem will be optimized. It can
 be either a function (pricing callback), an optimizer of MathOptInterface 
 (e.g. `Gurobi.Optimizer`, `CPLEX.Optimizer`, `Glpk.Optimizer`... with attributes), 
 or `nothing`. In the latter case, the solver will use a default optimizer that 
-should be defined in its parameters.
+should be defined in the parameters of the main solver.
+
+**Advanced usage** : 
+The user can use several solvers to optimize a subproblem : 
+
+    specify!(subproblem, solver = [Gurobi.Optimizer, my_callback, my_second_callback])
+
+Coluna always uses the first solver by default. Be cautious because changes are always
+buffered to all solvers. So you may degrade performances if you use a lot of solvers.
 """
 function specify!(
     sp::SubproblemForm; lower_multiplicity::Real = 1, 
-    upper_multiplicity::Real = 1, solver::Union{Nothing, Function, MOI.OptimizerWithAttributes, Type{<:MOI.AbstractOptimizer}} = nothing
+    upper_multiplicity::Real = 1, solver = nothing
 )
-    _specify!(sp, lower_multiplicity, upper_multiplicity, solver)
+    setlowermultiplicity!(sp.annotation, lower_multiplicity)
+    setuppermultiplicity!(sp.annotation, upper_multiplicity)
+    emptyoptimizerbuilders!(sp.annotation)
+    _specify!(sp, solver)
+    return
+end
+
+# Fallback
+_specify!(::SubproblemForm, solver) = error("BlockDecomposition does not support solver of type $(typeof(solver)).")
+
+_specify!(::SubproblemForm, ::Nothing) = return
+
+function _specify!(sp::SubproblemForm, solver::Union{MOI.OptimizerWithAttributes, Type{<:MOI.AbstractOptimizer}})
+    pushoptimizerbuilder!(sp.annotation, MOI._instantiate_and_check(solver))
+end
+
+function _specify!(sp::SubproblemForm, oracle::Function)
+    pushoptimizerbuilder!(sp.annotation, oracle)
+    return
+end
+
+function _specify!(sp::SubproblemForm, solvers::Vector)
+    for solver in solvers
+        _specify!(sp, solver)
+    end
     return
 end
