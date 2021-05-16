@@ -48,11 +48,14 @@ function get_all_block_structures(model::JuMP.Model)
     axesSets = collect(powerset(collect(constraints_and_axes.axes)))
     for axes in axesSets
         block_structure0, block_structure1 = get_block_structure(axes, constraints_and_axes, model)
-        # Only add block structures that where not found so far
-        if !structure_exists(block_structures, block_structure0)
+        # Only add structures that were not found already and were the set of master
+        # constraints is not empty
+        if !structure_exists(block_structures, block_structure0) &&
+                !isempty(block_structure0.master_constraints)
             push!(block_structures, block_structure0)
         end
-        if !structure_exists(block_structures, block_structure1)
+        if !structure_exists(block_structures, block_structure1) &&
+                !isempty(block_structure1.master_constraints)
             push!(block_structures, block_structure1)
         end
     end
@@ -286,44 +289,37 @@ function _get_variables_in_constraint(model::JuMP.Model, constraint::JuMP.Constr
 end
 
 # Computes for the given axes two decomposition structures:
-# In the first one (block_structure0) all constraints *indexed by at least one* element from
-# axes are in the master, in the second one (block_structure1), all constraints *not indexed
-# by any* element from axes are in the master
+# In the first one (bs0) all constraints *not indexed by any* axis from
+# axes are in the master, in the second one (bs1), all constraints *indexed
+# by at least one* axis from axes are in the master
 function get_block_structure(
     axes::Array{<:Axis,1},
     constraints_and_axes::Constraints_and_Axes,
     model::JuMP.Model,
 )
-    vertices = [Set{JuMP.ConstraintRef}(), Set{JuMP.ConstraintRef}()]
-    master_constraints = [Set{JuMP.ConstraintRef}(),Set{JuMP.ConstraintRef}()]
+    block_constraints = Set{JuMP.ConstraintRef}()
+    master_constraints = Set{JuMP.ConstraintRef}()
     for c in keys(constraints_and_axes.constraints_to_axes)
-        # Master constraints are constructed over at least one set which is contained in axes
-        # if axes is empty annotate everything as master
-        if  isempty(axes) || !isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))
-            push!(master_constraints[1], c)
+        if  isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))
+            push!(master_constraints, c)
         else
-            push!(vertices[1], c)
-        end
-        # Master constraints are constructed over no set which is contained in axes
-        # To do: ensure that no BBD is created where the master is empty
-        if  size(axes)[1] == length(constraints_and_axes.axes) || isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))
-            push!(master_constraints[2], c)
-        else
-            push!(vertices[2], c)
+            push!(block_constraints, c)
         end
     end
-
-    graph = _create_graph(vertices[1], constraints_and_axes)
+    # Create first block structure
+    graph = _create_graph(block_constraints, constraints_and_axes)
     blocks = _get_connected_components!(graph)
-    block_structure1 = BlockStructure(
-        constraints_and_axes, master_constraints[1], axes, false, blocks, graph
+    bs0 = BlockStructure(
+        constraints_and_axes, master_constraints, axes, false, blocks, graph
     )
-    graph = _create_graph(vertices[2], constraints_and_axes)
+    # Create second block structure (the roles of master constraints and block
+    # constraints are switched)
+    graph = _create_graph(master_constraints, constraints_and_axes)
     blocks = _get_connected_components!(graph)
-    block_structure2 = BlockStructure(
-        constraints_and_axes, master_constraints[2], axes, true, blocks, graph
+    bs1 = BlockStructure(
+        constraints_and_axes, block_constraints, axes, true, blocks, graph
     )
-    return block_structure1, block_structure2
+    return bs0, bs1
 end
 
 function _get_connected_components!(graph::MetaGraph)
