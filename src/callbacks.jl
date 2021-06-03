@@ -13,10 +13,11 @@ function MOI.submit(
     cb::PricingSolution,
     cost::Float64,
     variables::Vector{JuMP.VariableRef},
-    values::Vector{Float64}
+    values::Vector{Float64},
+    custom_data = nothing
 )
     return MOI.submit(
-        JuMP.backend(model), cb, cost, JuMP.index.(variables), values
+        JuMP.backend(model), cb, cost, JuMP.index.(variables), values, custom_data
     )
 end
 
