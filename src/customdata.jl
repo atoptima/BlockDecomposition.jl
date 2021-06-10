@@ -1,12 +1,12 @@
 struct CustomVars <: MOI.AbstractModelAttribute end
 struct CustomConstrs <: MOI.AbstractModelAttribute end
 
-addcustomvars!(model, customvar::DataType) = MOI.set(
-    model, CustomVars(), customvar
+addcustomvars!(model, customvars::Vector{DataType}) = MOI.set(
+    model, CustomVars(), customvars
 )
 
-addcustomconstrs!(model, customconstr::DataType) = MOI.set(
-    model, CustomConstrs(), customconstr
+addcustomconstrs!(model, customconstrs::Vector{DataType}) = MOI.set(
+    model, CustomConstrs(), customconstrs
 )
 
 customvars(model) = MOI.get(model, CustomVars())
