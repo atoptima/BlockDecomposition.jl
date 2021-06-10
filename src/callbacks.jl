@@ -99,7 +99,7 @@ Every custom data assigned to a pricing variable or a user cut should inherit fr
 abstract type AbstractCustomData end
 
 function MOI.submit(
-    model::Model, cb::MOI.UserCut, con::ScalarConstraint, custom_data::AbstractCustomData
+    model, cb, con, custom_data
 )
     return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
 end
