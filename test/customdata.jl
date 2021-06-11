@@ -16,8 +16,8 @@ end
 
 function test_custom_data()
     model = Model()
-    addcustomvars!(model, [MyCustomVarData1, MyCustomVarData2])
-    addcustomconstrs!(model, [MyCustomCutData1, MyCustomCutData2])
+    customvars!(model, [MyCustomVarData1, MyCustomVarData2])
+    customconstrs!(model, [MyCustomCutData1, MyCustomCutData2])
 
     @testset "Custom data" begin
         @test customvars(model)[1] == MyCustomVarData1

@@ -10,7 +10,7 @@ const JC = JuMP.Containers
 
 export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems, ×, indice,
        objectiveprimalbound!, objectivedualbound!, branchingpriority!, branchingpriority,
-       addcustomvars!, addcustomconstrs!, customvars, customconstrs
+       customvars!, customconstrs!, customvars, customconstrs
 
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 
