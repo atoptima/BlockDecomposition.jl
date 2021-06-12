@@ -12,6 +12,7 @@ struct DwPricingSp <: Subproblem end
 struct BendersSepSp <: Subproblem end
 
 abstract type AbstractCustomOptimizer end
+
 mutable struct Annotation{T, F<:Formulation, D<:Decomposition}
     unique_id::Int
     parent_id::Int # 0 if original formulation
