@@ -58,6 +58,7 @@ iterate(i::AxisId) = (i, nothing)
 iterate(i::AxisId, ::Any) = nothing
 
 Base.show(io::IO, i::AxisId) = show(io, i.indice)
+Base.length(i::AxisId) = 1
 
 struct Axis{Name, T}
     name::Symbol

@@ -57,5 +57,8 @@ function test_DenseAxisArray_usage()
 
     @variable(model, x10[cF, cA])
     @test x10[aF[1], aA[1]] == x10[cF[1], cA[1]]
+
+    @variable(model, x11[aA[1]])
+    @test x11[aA[1]] == x11[cA[1]]
     return
 end
