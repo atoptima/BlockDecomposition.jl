@@ -11,6 +11,8 @@ abstract type Subproblem <: Formulation end
 struct DwPricingSp <: Subproblem end
 struct BendersSepSp <: Subproblem end
 
+abstract type AbstractCustomOptimizer end
+
 mutable struct Annotation{T, F<:Formulation, D<:Decomposition}
     unique_id::Int
     parent_id::Int # 0 if original formulation
@@ -35,6 +37,7 @@ setuppermultiplicity!(a::Annotation, um::Real) = a.upper_multiplicity = um
 emptyoptimizerbuilders!(a::Annotation) = empty!(a.optimizer_builders)
 pushoptimizerbuilder!(a::Annotation, f::MOI.AbstractOptimizer) = push!(a.optimizer_builders, f)
 pushoptimizerbuilder!(a::Annotation, f::Function) = push!(a.optimizer_builders, f)
+pushoptimizerbuilder!(a::Annotation, f::AbstractCustomOptimizer) = push!(a.optimizer_builders, f)
 
 OriginalAnnotation() = Annotation(0, 0, Original, NoDecomposition, 0, 1.0, 1.0, [])
 

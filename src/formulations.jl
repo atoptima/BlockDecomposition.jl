@@ -111,8 +111,14 @@ _specify!(::SubproblemForm, solver) = error("BlockDecomposition does not support
 
 _specify!(::SubproblemForm, ::Nothing) = return
 
+function _specify!(sp::SubproblemForm, solver::AbstractCustomOptimizer)
+    pushoptimizerbuilder!(sp.annotation, solver)
+    return
+end
+
 function _specify!(sp::SubproblemForm, solver::Union{MOI.OptimizerWithAttributes, Type{<:MOI.AbstractOptimizer}})
     pushoptimizerbuilder!(sp.annotation, MOI._instantiate_and_check(solver))
+    return
 end
 
 function _specify!(sp::SubproblemForm, oracle::Function)
