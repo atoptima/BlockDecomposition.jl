@@ -1,10 +1,10 @@
 abstract type AbstractColumnInfo end
 struct SpInfos <: MOI.AbstractModelAttribute end
 struct SpInfo
-    sp_info::Vector{AbstractColumnInfo}
+    columns_infos::Vector{AbstractColumnInfo}
 end
 
-getsolutions(model, k) = MOI.get(model, SpInfos())[k].sp_info
+getsolutions(model, k) = MOI.get(model, SpInfos())[k].columns_infos
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::SpInfos, value::Vector{SpInfo}
