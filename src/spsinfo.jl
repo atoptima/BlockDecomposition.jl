@@ -14,5 +14,5 @@ function MOI.set(
 end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::SpsInfo)
-    return get(dest.modattr, attribute, nothing)
+    return get(dest.modattr, attribute, SpInfo[])
 end
