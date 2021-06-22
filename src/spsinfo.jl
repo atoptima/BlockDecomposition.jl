@@ -22,3 +22,8 @@ end
 MathOptInterface.Utilities.map_indices(
     ::MathOptInterface.Utilities.IndexMap, x::Vector{SpInfo}
 ) = x
+
+value(::AbstractColumnInfo) = return
+
+value(info::AbstractColumnInfo, x::JuMP.VariableRef) = value(info, x.index)
+value(::AbstractColumnInfo, idx::MOI.VariableIndex) = return
