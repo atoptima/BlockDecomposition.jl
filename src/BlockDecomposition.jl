@@ -10,7 +10,7 @@ const JC = JuMP.Containers
 
 export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems, ×, indice,
        objectiveprimalbound!, objectivedualbound!, branchingpriority!, branchingpriority,
-       customvars!, customconstrs!, customvars, customconstrs, getsolutions
+       customvars!, customconstrs!, customvars, customconstrs
 
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 
@@ -24,7 +24,7 @@ include("callbacks.jl")
 include("utils.jl")
 include("branchingpriority.jl")
 include("customdata.jl")
-include("spsinfo.jl")
+include("spscolsinfo.jl")
 
 function model_factory(::Val{true}, optimizer; kw...)::JuMP.Model
     m = JuMP.direct_model(optimizer.optimizer_constructor())
