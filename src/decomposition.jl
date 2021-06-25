@@ -38,7 +38,7 @@ function register_automatic_dantzig_wolfe(model::JuMP.Model)
             setannotation!(model, constraintref, ann)
             union!(
                 variables_in_block,
-                model.ext[:decomposition_structure].constraints_and_axes.constraints_to_variables[constraintref]
+                model.ext[:decomposition_structure].model_description.constraints_to_variables[constraintref]
             )
         end
         for v in variables_in_block

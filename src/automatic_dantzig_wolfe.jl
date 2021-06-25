@@ -43,11 +43,11 @@ end
 
 # Returns all possible block structures of the given model
 function get_all_block_structures(model::JuMP.Model)
-    constraints_and_axes = get_constraints_and_axes(model)
+    model_description = get_model_description(model)
     block_structures = Array{BlockStructure,1}()
-    axesSets = collect(powerset(collect(constraints_and_axes.axes)))
+    axesSets = collect(powerset(collect(model_description.axes)))
     for axes in axesSets
-        block_structure0, block_structure1 = get_block_structure(axes, constraints_and_axes, model)
+        block_structure0, block_structure1 = get_block_structure(axes, model_description, model)
         # Only add structures that were not found already and where the set of master
         # constraints is not empty
         if !structure_exists(block_structures, block_structure0) &&
@@ -64,7 +64,7 @@ end
 
 # Contains all the information about the constraints and variables in a model we might need
 # to compute different block structures
-mutable struct Constraints_and_Axes
+mutable struct ModelDescription
     constraints::Set{JuMP.ConstraintRef}
     axes::Set{BlockDecomposition.Axis}
     variables::Set{MOI.VariableIndex}
@@ -74,7 +74,7 @@ end
 
 struct BlockStructure
     # Constraints_and_axes is the same for every possible BlockStructure of a model
-    constraints_and_axes::Constraints_and_Axes
+    model_description::ModelDescription
     master_constraints::Set{JuMP.ConstraintRef}
     master_sets::Array{BlockDecomposition.Axis,1}
     # Invert linked is true iff the linking constraints are the ones not indexed
@@ -110,7 +110,7 @@ end
 
 function _get_relative_border_area_score(block_structure::BlockStructure)
     n_linking_constraints = length(block_structure.master_constraints)
-    n_constraints = length(block_structure.constraints_and_axes.constraints)
+    n_constraints = length(block_structure.model_description.constraints)
     score = n_linking_constraints/n_constraints
 end
 
@@ -131,7 +131,7 @@ function _get_block_border_score(block_structure::BlockStructure)
     m = 0
     lambda = 5
     for block in block_structure.blocks
-        n = _get_nb_nonzero_entries(block, block_structure.constraints_and_axes)
+        n = _get_nb_nonzero_entries(block, block_structure.model_description)
         push!(e, n)
         m += n
     end
@@ -140,7 +140,7 @@ function _get_block_border_score(block_structure::BlockStructure)
         q_a += (e[i] / m) * (1 - (e[i] / m))
     end
     n_master_constraints =  length(block_structure.master_constraints)
-    n_constraints = length(block_structure.constraints_and_axes.constraints)
+    n_constraints = length(block_structure.model_description.constraints)
     p_a = MathConstants.e^(-1 * lambda * (n_master_constraints / n_constraints))
     gamma = q_a*p_a
     return gamma
@@ -149,11 +149,11 @@ end
 # Computes the number of nonzero entries in the given constraints
 function _get_nb_nonzero_entries(
     constraints::Set{JuMP.ConstraintRef},
-    constraints_and_axes::Constraints_and_Axes
+    model_description::ModelDescription
 )
     result = 0
     for c in constraints
-        result = result + length(constraints_and_axes.constraints_to_variables[c])
+        result = result + length(model_description.constraints_to_variables[c])
     end
     return result
 end
@@ -168,7 +168,7 @@ function white_scores(block_structures::Array{BlockStructure,1})
 end
 
 function _get_white_score(block_structure::BlockStructure)
-    n_master = length(block_structure.constraints_and_axes.variables) *
+    n_master = length(block_structure.model_description.variables) *
         length(block_structure.master_constraints)
     n_blocks = 0
     variables_in_block = Set{MOI.VariableIndex}()
@@ -177,20 +177,20 @@ function _get_white_score(block_structure::BlockStructure)
         for constraint in block
             union!(
                 variables_in_block,
-                block_structure.constraints_and_axes.constraints_to_variables[constraint]
+                block_structure.model_description.constraints_to_variables[constraint]
             )
         end
-        n_blocks = n_blocks + length(variables_in_block)*length(block)
+        n_blocks = n_blocks + length(variables_in_block) * length(block)
     end
-    coefficient_matrix_size = length(block_structure.constraints_and_axes.constraints) *
-        length(block_structure.constraints_and_axes.variables)
-    black_score = (n_master+n_blocks)/coefficient_matrix_size
+    coefficient_matrix_size = length(block_structure.model_description.constraints) *
+        length(block_structure.model_description.variables)
+    black_score = (n_master + n_blocks) / coefficient_matrix_size
     white_score = 1-black_score
     return white_score
 end
 
-# Add anonymous constraints and axes from the model to constraints_and_axes (car)
-function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
+# Add anonymous constraints and axes from the model to model_description (car)
+function _add_anonymous_var_con!(car::ModelDescription, model::JuMP.Model)
     types =  JuMP.list_of_constraint_types(model)
     for t in types
         if t[1] != VariableRef
@@ -208,14 +208,14 @@ function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
     end
 end
 
-# Returns an instance of the struct Constraints_and_Axes
-function get_constraints_and_axes(model::JuMP.Model)
+# Returns an instance of the struct ModelDescription
+function get_model_description(model::JuMP.Model)
     constraints = Set{JuMP.ConstraintRef}()
     axes = Set{BlockDecomposition.Axis}()
     variables = Set{MOI.VariableIndex}()
     constraints_to_axes = Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}()
     constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
-    constraints_and_axes = Constraints_and_Axes(
+    model_description = ModelDescription(
                                constraints,
                                axes,
                                variables,
@@ -227,7 +227,7 @@ function get_constraints_and_axes(model::JuMP.Model)
         index_sets = _get_constraint_axes(reference)
         if eltype(reference) <: JuMP.ConstraintRef # Add constraint
             for c in reference
-                _add_constraint!(constraints_and_axes, c, model, index_sets)
+                _add_constraint!(model_description, c, model, index_sets)
             end
         elseif eltype(reference) <: JuMP.VariableRef # Add variable
             for v in reference
@@ -235,14 +235,14 @@ function get_constraints_and_axes(model::JuMP.Model)
             end
         end
     end
-    constraints_and_axes.variables = variables
-    _add_anonymous_var_con!(constraints_and_axes, model)
-    return constraints_and_axes
+    model_description.variables = variables
+    _add_anonymous_var_con!(model_description, model)
+    return model_description
 end
 
-# Adds a constraint to the Constraints_and_Axes object o
+# Adds a constraint to the ModelDescription object o
 function _add_constraint!(
-    o::Constraints_and_Axes,
+    o::ModelDescription,
     c::JuMP.ConstraintRef,
     model::JuMP.Model,
     index_sets
@@ -308,30 +308,30 @@ end
 # by at least one* axis from axes are in the master
 function get_block_structure(
     axes::Array{<:Axis,1},
-    constraints_and_axes::Constraints_and_Axes,
+    model_description::ModelDescription,
     model::JuMP.Model,
 )
     block_constraints = Set{JuMP.ConstraintRef}()
     master_constraints = Set{JuMP.ConstraintRef}()
-    for c in keys(constraints_and_axes.constraints_to_axes)
-        if  isempty(intersect(axes, constraints_and_axes.constraints_to_axes[c]))
+    for c in keys(model_description.constraints_to_axes)
+        if  isempty(intersect(axes, model_description.constraints_to_axes[c]))
             push!(master_constraints, c)
         else
             push!(block_constraints, c)
         end
     end
     # Create first block structure
-    graph = _create_graph(block_constraints, constraints_and_axes)
+    graph = _create_graph(block_constraints, model_description)
     blocks = _get_connected_components!(graph)
     bs0 = BlockStructure(
-        constraints_and_axes, master_constraints, axes, false, blocks, graph
+        model_description, master_constraints, axes, false, blocks, graph
     )
     # Create second block structure (the roles of master constraints and block
     # constraints are switched)
-    graph = _create_graph(master_constraints, constraints_and_axes)
+    graph = _create_graph(master_constraints, model_description)
     blocks = _get_connected_components!(graph)
     bs1 = BlockStructure(
-        constraints_and_axes, block_constraints, axes, true, blocks, graph
+        model_description, block_constraints, axes, true, blocks, graph
     )
     return bs0, bs1
 end
@@ -351,7 +351,7 @@ end
 
 function _create_graph(
     vertices::Set{JuMP.ConstraintRef},
-    constraints_and_axes::Constraints_and_Axes,
+    model_description::ModelDescription,
 )
     graph = SimpleGraph(0)
     graph = MetaGraph(graph)
@@ -367,8 +367,8 @@ function _create_graph(
     for v1 in vertices, v2 in vertices
          if v1 != v2
             intersection = intersect(
-                constraints_and_axes.constraints_to_variables[v1],
-                constraints_and_axes.constraints_to_variables[v2],
+                model_description.constraints_to_variables[v1],
+                model_description.constraints_to_variables[v2],
             )
             if !isempty(intersection)
                 add_edge!(graph, graph[v1, :constraint_ref], graph[v2, :constraint_ref])
