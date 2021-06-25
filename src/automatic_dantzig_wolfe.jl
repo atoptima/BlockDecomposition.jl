@@ -48,7 +48,7 @@ function get_all_block_structures(model::JuMP.Model)
     axesSets = collect(powerset(collect(constraints_and_axes.axes)))
     for axes in axesSets
         block_structure0, block_structure1 = get_block_structure(axes, constraints_and_axes, model)
-        # Only add structures that were not found already and were the set of master
+        # Only add structures that were not found already and where the set of master
         # constraints is not empty
         if !structure_exists(block_structures, block_structure0) &&
                 !isempty(block_structure0.master_constraints)
@@ -189,50 +189,6 @@ function _get_white_score(block_structure::BlockStructure)
     return white_score
 end
 
-# Returns an instance of the struct Constraints_and_Axes
-function get_constraints_and_axes(model::JuMP.Model)
-    constraints = Set{JuMP.ConstraintRef}()
-    axes = Set{BlockDecomposition.Axis}()
-    variables = Set{MOI.VariableIndex}()
-    constraints_to_axes = Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}()
-    constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
-    constraints_and_axes = Constraints_and_Axes(
-                               constraints,
-                               axes,
-                               variables,
-                               constraints_to_axes,
-                               constraints_to_variables
-                            )
-    for k in keys(model.obj_dict)  # Check all names in the model
-        reference = _get_constraint_reference(model, k)
-        if eltype(reference) <: JuMP.ConstraintRef
-            for c in reference
-                _add_constraint!(constraints_and_axes, c, model, reference)
-            end
-        elseif eltype(reference) <: JuMP.VariableRef
-            for v in reference
-                push!(variables, JuMP.index(v))
-            end
-        end
-    end
-    constraints_and_axes.variables = variables
-    _add_anonymous_var_con!(constraints_and_axes, model)
-    return constraints_and_axes
-end
-
-# Convert the constraint reference to a DenseAxisArrays
-function _get_constraint_reference(model::JuMP.Model, k)
-    if typeof(model.obj_dict[k]) <: JuMP.Containers.DenseAxisArray
-        return model.obj_dict[k]
-    elseif typeof(model.obj_dict[k]) <: Array
-        axs = axes(model.obj_dict[k])
-        return JuMP.Containers.DenseAxisArray(model.obj_dict[k], axs...)
-    else
-        # Can this case happen?
-        return error("Type of constraint reference can not be handled.")
-    end
-end
-
 # Add anonymous constraints and axes from the model to constraints_and_axes (car)
 function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
     types =  JuMP.list_of_constraint_types(model)
@@ -252,31 +208,89 @@ function _add_anonymous_var_con!(car::Constraints_and_Axes, model::JuMP.Model)
     end
 end
 
+# Returns an instance of the struct Constraints_and_Axes
+function get_constraints_and_axes(model::JuMP.Model)
+    constraints = Set{JuMP.ConstraintRef}()
+    axes = Set{BlockDecomposition.Axis}()
+    variables = Set{MOI.VariableIndex}()
+    constraints_to_axes = Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}()
+    constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
+    constraints_and_axes = Constraints_and_Axes(
+                               constraints,
+                               axes,
+                               variables,
+                               constraints_to_axes,
+                               constraints_to_variables
+                            )
+    for k in keys(model.obj_dict)  # Check all names in the model
+        reference = model.obj_dict[k]
+        index_sets = _get_constraint_axes(reference)
+        if eltype(reference) <: JuMP.ConstraintRef # Add constraint
+            for c in reference
+                _add_constraint!(constraints_and_axes, c, model, index_sets)
+            end
+        elseif eltype(reference) <: JuMP.VariableRef # Add variable
+            for v in reference
+                push!(variables, JuMP.index(v))
+            end
+        end
+    end
+    constraints_and_axes.variables = variables
+    _add_anonymous_var_con!(constraints_and_axes, model)
+    return constraints_and_axes
+end
+
+# Adds a constraint to the Constraints_and_Axes object o
 function _add_constraint!(
     o::Constraints_and_Axes,
     c::JuMP.ConstraintRef,
     model::JuMP.Model,
-    reference_constraints_name::T,
-) where T <: JuMP.Containers.DenseAxisArray
+    index_sets
+)
     push!(o.constraints, c)
-    axes_of_constraint = _get_axes_of_constraint(reference_constraints_name)
-    for r in axes_of_constraint
+    for r in index_sets
         push!(o.axes, r)
     end
-    o.constraints_to_axes[c] = axes_of_constraint
+    o.constraints_to_axes[c] = index_sets
     o.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
 end
 
-function _get_axes_of_constraint(
-    reference_constraints_name::T
-) where T <: JuMP.Containers.DenseAxisArray
+# Computes the index sets of the constraint reference
+function _get_constraint_axes(constraint_ref::AbstractArray)
+    axs = axes(constraint_ref)
+    ds = JuMP.Containers.DenseAxisArray(constraint_ref, axs...)
+    return _get_constraint_axes(ds)
+end
+
+function _get_constraint_axes(constraint_ref::JuMP.Containers.DenseAxisArray)
     axes_of_constraint = Array{BlockDecomposition.Axis,1}()
-    for a in reference_constraints_name.axes
+    for a in constraint_ref.axes
         if a != 1   # Axes of the form 1:1 do not matter (single constraints)
             push!(axes_of_constraint, Axis(a))
         end
     end
     return axes_of_constraint
+end
+
+function _get_constraint_axes(constraint_ref::JuMP.Containers.SparseAxisArray)
+    indices = eachindex(constraint_ref)
+    axes = Array{Set{Any}}(undef, 1)
+    for index in indices
+        for j in 1:length(index)
+            if length(axes) < length(index)
+                resize!(axes, length(index))
+            end
+            if !isassigned(axes, j)
+                axes[j] = Set()
+            end
+            push!(axes[j], index[j])
+        end
+    end
+    result = Array{BlockDecomposition.Axis,1}()
+    for a in axes
+        push!(result, Axis(a))
+    end
+    return result
 end
 
 function _get_variables_in_constraint(model::JuMP.Model, constraint::JuMP.ConstraintRef)
