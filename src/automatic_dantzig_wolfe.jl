@@ -258,11 +258,11 @@ end
 # Computes the index sets of the constraint reference
 function _get_constraint_axes(constraint_ref::AbstractArray)
     axs = axes(constraint_ref)
-    ds = JuMP.Containers.DenseAxisArray(constraint_ref, axs...)
+    ds = JC.DenseAxisArray(constraint_ref, axs...)
     return _get_constraint_axes(ds)
 end
 
-function _get_constraint_axes(constraint_ref::JuMP.Containers.DenseAxisArray)
+function _get_constraint_axes(constraint_ref::JC.DenseAxisArray)
     axes_of_constraint = Array{BlockDecomposition.Axis,1}()
     for a in constraint_ref.axes
         if a != 1   # Axes of the form 1:1 do not matter (single constraints)
@@ -272,7 +272,7 @@ function _get_constraint_axes(constraint_ref::JuMP.Containers.DenseAxisArray)
     return axes_of_constraint
 end
 
-function _get_constraint_axes(constraint_ref::JuMP.Containers.SparseAxisArray)
+function _get_constraint_axes(constraint_ref::JC.SparseAxisArray)
     indices = eachindex(constraint_ref)
     axes = Array{Set{Any}}(undef, 1)
     for index in indices
