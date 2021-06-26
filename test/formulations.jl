@@ -41,7 +41,7 @@ function example_assignment_automatic_dantzig_wolfe()
     Q = [1020 1460 1530 1190]
     M = 1:nb_machines
     J = 1:nb_jobs
-    model = BlockModel(automatic_dantzig_wolfe = white_score)
+    model = BlockModel(automatic_dantzig_wolfe = BlockDecomposition.white_score)
     @variable(model, x[m in M, j in J], Bin)
     @constraint(model, cov[j in J], sum(x[m, j] for m in M) >= 1)
     @constraint(model, knp[m in M], sum(w[m, j] * x[m, j] for j in J) <= Q[m])
