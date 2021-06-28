@@ -6,7 +6,7 @@ which partition (master/subproblem) of the original formulation the variable
 or the constraint is located.
 """
 function register_decomposition(model::JuMP.Model)
-    if model.ext[:automatic_dantzig_wolfe] != inaktive
+    if model.ext[:automatic_dantzig_wolfe] != inaktive || model.ext[:read_decomposition]
         register_automatic_dantzig_wolfe(model)
     else
         tree = gettree(model)
@@ -32,7 +32,7 @@ function register_automatic_dantzig_wolfe(model::JuMP.Model)
         empty!(variables_in_block)
         empty!(axisids)
         push!(axisids, i)
-        # Annotate constraints in one block (and variables contained in these)  with the same annotation
+        # Annotate constraints in one block (and variables contained in these) with the same annotation
         ann = _getannotation(tree, axisids)
         for constraintref in decomposition_structure.blocks[i]
             setannotation!(model, constraintref, ann)

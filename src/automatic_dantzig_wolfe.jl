@@ -70,9 +70,15 @@ mutable struct ModelDescription
     variables::Set{MOI.VariableIndex}
     constraints_to_axes::Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}
     constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}
+    ModelDescription(constraints_to_variables) = (
+        md = new();
+        md.constraints_to_variables = constraints_to_variables;
+        return md
+    )
+    ModelDescription(c, a, v, cta, ctv) = new(c, a, v, cta, ctv)
 end
 
-struct BlockStructure
+mutable struct BlockStructure
     # Constraints_and_axes is the same for every possible BlockStructure of a model
     model_description::ModelDescription
     master_constraints::Set{JuMP.ConstraintRef}
@@ -82,6 +88,14 @@ struct BlockStructure
     invert_linking::Bool
     blocks::Array{Set{JuMP.ConstraintRef},1}
     graph::MetaGraph
+    BlockStructure(master_constraints, blocks, constraints_to_variables) = (
+        bs = new();
+        bs.master_constraints = master_constraints;
+        bs.blocks = blocks;
+        bs.model_description = ModelDescription(constraints_to_variables);
+        return bs
+    )
+    BlockStructure(md, mc, ms, il, b, g) = new(md, mc, ms, il, b, g)
 end
 
 # Returns true if and only if block_structure already exists in block_structures
