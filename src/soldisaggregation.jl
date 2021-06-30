@@ -8,6 +8,10 @@ Return a vector of information about the columns in the subproblem `k` solution.
 getsolutions(model::JuMP.Model, k) = getsolutions(JuMP.backend(model), k)
 getsolutions(model::MOI.Utilities.CachingOptimizer, k) = getsolutions(model.optimizer, k)
 getsolutions(b::MOI.Bridges.AbstractBridgeOptimizer, k) = getsolutions(b.model, k)
+getsolutions(model::MOI.AbstractOptimizer, k) = error(
+    "getsolutions(::$(typeof(model)), ::$(typeof(k))) not defined."
+)
+getsolutions(::Nothing, k) = error("No solver defined.")
 
 """
     value(info)
