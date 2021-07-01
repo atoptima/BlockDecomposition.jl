@@ -24,6 +24,7 @@ include("callbacks.jl")
 include("utils.jl")
 include("branchingpriority.jl")
 include("customdata.jl")
+include("soldisaggregation.jl")
 
 function model_factory(::Val{true}, optimizer; kw...)::JuMP.Model
     m = JuMP.direct_model(optimizer.optimizer_constructor())
