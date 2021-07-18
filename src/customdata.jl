@@ -2,28 +2,28 @@ struct CustomVars <: MOI.AbstractModelAttribute end
 struct CustomConstrs <: MOI.AbstractModelAttribute end
 
 """
-    customvars!(model, customvars::Type{AbstractCustomData})
-    customvars!(model, customvars::Vector{Type{AbstractCustomData}})
+    customvars!(model, customvars::DataType)
+    customvars!(model, customvars::Vector{DataType})
 
 Set the possible custom data types of variables in a model.
 """
-customvars!(model, customvars::Type{AbstractCustomData}) = MOI.set(
+customvars!(model, customvars::DataType) = MOI.set(
     model, CustomVars(), [customvars]
 )
-customvars!(model, customvars::Vector{Type{AbstractCustomData}}) = MOI.set(
+customvars!(model, customvars::Vector{DataType}) = MOI.set(
     model, CustomVars(), customvars
 )
 
 """
-    customconstrs!(model, customconstrs::Type{AbstractCustomData})
-    customconstrs!(model, customconstrs::Vector{Type{AbstractCustomData}})
+    customconstrs!(model, customconstrs::DataType)
+    customconstrs!(model, customconstrs::Vector{DataType})
 
 Set the possible custom data types of constraints in a model.
 """
-customconstrs!(model, customconstrs::Type{AbstractCustomData}) = MOI.set(
+customconstrs!(model, customconstrs::DataType) = MOI.set(
     model, CustomConstrs(), [customconstrs]
 )
-customconstrs!(model, customconstrs::Vector{Type{AbstractCustomData}}) = MOI.set(
+customconstrs!(model, customconstrs::Vector{DataType}) = MOI.set(
     model, CustomConstrs(), customconstrs
 )
 
