@@ -161,7 +161,7 @@ function dummymodel3()
     model = BD.BlockModel()
     BD.@axis(A, 1:5)
     B = 1:6
-    @variable(model, x[a in A, b in B], Int)
+    x = @variable(model, [a in A, b in B], Int) # anonymous variables
     mast = @constraint(model, sum(x[a,b] for a in A, b in B) >= 5) # anonymous constraints
     sp = @constraint(model, [a in A], sum(x[a,b] for b in B) == 1) # anonymous constraints
     @objective(model, Min, sum(x[a,b] for a in A, b in B))
@@ -209,13 +209,15 @@ function test_dummy_model_decompositions()
         @test MOI.get(model, BD.ObjectiveDualBound()) === nothing
     end
 
-    @testset "Model with anonymous constraint" begin
+    @testset "Model with anonymous variables & constraints" begin
         model, x, mast, sp, dec = dummymodel3()
         try
             JuMP.optimize!(model)
         catch e
             @test e isa NoOptimizer
         end
+        x_annotation = BD.annotation(model, x[1,1])
+        @test x_annotation === nothing
         mast_annotation = BD.annotation(model, mast)
         @test mast_annotation === nothing # anonymous constraint
         sp_annotation = BD.annotation(model, sp[1])
