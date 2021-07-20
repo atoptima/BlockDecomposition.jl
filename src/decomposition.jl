@@ -11,7 +11,7 @@ function register_decomposition(model::JuMP.Model)
     # Link to the tree
     tree = gettree(model)
     tree === nothing && return
-    for (key, jump_obj) in model.obj_dict
+    for (_, jump_obj) in model.obj_dict
         _annotate_elements!(model, jump_obj, tree)
     end
     return
@@ -122,7 +122,7 @@ function MOI.get(
     tree === nothing && return nothing
 
     conattr = get(dest.conattr, attribute, nothing)
-    conattr === nothing && return tree.root.master
+    conattr === nothing && return nothing # anonymous constraint
     return get(conattr, ci, tree.root.master)
 end
 
@@ -134,7 +134,7 @@ function MOI.get(
     tree === nothing && return nothing
 
     varattr = get(dest.varattr, attribute, nothing)
-    varattr === nothing && return tree.root.master
+    varattr === nothing && return nothing # anonymous variable
     return get(varattr, vi, tree.root.master)
 end
 
