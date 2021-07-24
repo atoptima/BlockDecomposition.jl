@@ -48,20 +48,26 @@ function _read_constraint_names(decomp_filename::String)
     master = Set{String}() # Names of master constraints
     blocks = Array{Set{String},1}() # Names of constraints in blocks
     lines = readlines(decomp_filename)
-    for index in eachindex(lines) 
+    index = 1
+    while index <= size(lines,1)
         items = _line_to_items(lines[index])
-        if items[1] == "NBLOCKS" # Initialize number of blocks
-            index = index + 1
-            nb_blocks = parse(Int, lines[index])
+        if items[1] == "\\\\"
+            index += 1
+        elseif items[1] == "PRESOLVED"
+            index += 2
+        elseif items[1] == "NBLOCKS" # Initialize number of blocks
+            nb_blocks = parse(Int, lines[index + 1])
             blocks = Array{Set{String},1}(undef, nb_blocks)
-        end
-        if items[1] == "BLOCK" # Add block
+            index += 2
+        elseif items[1] == "BLOCK" # Add block
             nb = parse(Int, items[2])
-            constraint_names, new_index = _get_following_constraints(lines, index)
+            constraint_names, index = _get_following_constraints(lines, index)
             blocks[nb] = constraint_names
-        end
-        if items[1] == "MASTERCONSS" # Add master constraints
+        elseif items[1] == "MASTERCONSS" # Add master constraints
             master, _ = _get_following_constraints(lines, index)
+            break
+        else
+            error("Error parsing decomposition file because line starting with ", items[1], " not allowed.")
         end
     end
     return master, blocks
