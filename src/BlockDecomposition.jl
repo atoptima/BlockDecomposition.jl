@@ -14,9 +14,10 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 const JC = JuMP.Containers
 
-export BlockModel, annotation, specify!, decompose, gettree,
-    getmaster, getsubproblems, indice, objectiveprimalbound!, objectivedualbound!,
-    read_decomposition!
+export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems, ×, indice,
+       objectiveprimalbound!, objectivedualbound!, branchingpriority!, branchingpriority,
+       customvars!, customconstrs!, customvars, customconstrs, read_decomposition!
+
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 export AutoDwStrategy
 
@@ -30,6 +31,26 @@ include("callbacks.jl")
 include("automatic_dantzig_wolfe.jl")
 include("read_decomposition.jl")
 include("utils.jl")
+include("branchingpriority.jl")
+include("customdata.jl")
+include("soldisaggregation.jl")
+
+function model_factory(::Val{true}, optimizer; kw...)::JuMP.Model
+    m = JuMP.direct_model(optimizer.optimizer_constructor())
+    for (param, val) in optimizer.params
+        set_optimizer_attribute(m, param, val)
+    end
+    for (key, val) in kw
+        if key !== :direct_model
+            @warn "Unsupported keyword argument $key when creating a BlockModel with direct_model=true."
+        end
+    end
+    return m
+end
+
+function model_factory(::Val{false}, args...; kw...)::JuMP.Model
+    return JuMP.Model(args...; kw...)
+end
 
 function BlockModel(
     args...;
@@ -39,15 +60,14 @@ function BlockModel(
     decomp_filename::String = "",
     kw...
 )
+    dm = haskey(kw, :direct_model) ? kw[:direct_model] : false
+    m = model_factory(Val(dm), args...; kw...)
     if read_decomposition
         src = MOI.FileFormats.Model(format = MOI.FileFormats.FORMAT_MPS, filename = model_filename)
         MathOptInterface.read_from_file(src, model_filename)
-        m = JuMP.Model(args...; kw...)
         MathOptInterface.copy_to(m, src)
         m.ext[:model_filename] = model_filename
         m.ext[:decomp_filename] = decomp_filename
-    else
-        m = JuMP.Model(args...; kw...)
     end
     JuMP.set_optimize_hook(m, optimize!)
     m.ext[:read_decomposition] = read_decomposition
@@ -66,6 +86,17 @@ function optimize!(m::JuMP.Model)
     return JuMP.optimize!(m, ignore_optimize_hook = true)
 end
 
+"""
+    annotation(node)
+
+Return the annotation that describes the master/subproblem of a given node of
+the decomposition tree.
+
+    annotation(model, variable)
+    annotation(model, constraint)
+
+Return the subproblem to which a variable or a constraint belongs.
+"""
 function annotation(model::JuMP.Model, objref::JuMP.ConstraintRef)
     MOI.get(model, ConstraintDecomposition(), objref)
 end

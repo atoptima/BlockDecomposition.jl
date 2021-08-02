@@ -154,6 +154,15 @@ function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, 
     end
 end
 
+"""
+    @dantzig_wolfe_decomposition(model, name, axis)
+
+Register a Dantzig-Wolfe decomposition on the JuMP model `model` where the index-set
+of the subproblems are `axis`.
+
+Create a variable `name` from which the user can access the node of the decomposition tree
+where the master of this decomposition is stored.
+"""
 macro dantzig_wolfe_decomposition(args...)
     if length(args) != 3
         error("Three arguments expected: model, decomposition name, and axis")
@@ -166,6 +175,15 @@ macro dantzig_wolfe_decomposition(args...)
     return esc(dw_exp)
 end
 
+"""
+    @benders_decomposition(model, name, axis)
+
+Register a Benders decomposition on the JuMP model `model` where the index-set
+of the subproblems are `axis`.
+
+Create a variable `name` from which the user can access the node of the Decomposition
+tree where the master of this decomposition is stored.
+"""
 macro benders_decomposition(args...)
     if length(args) != 3
         error("Three arguments expected: model, decomposition name, and axis")
