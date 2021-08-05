@@ -13,10 +13,11 @@ function MOI.submit(
     cb::PricingSolution,
     cost::Float64,
     variables::Vector{JuMP.VariableRef},
-    values::Vector{Float64}
+    values::Vector{Float64},
+    custom_data = nothing
 )
     return MOI.submit(
-        JuMP.backend(model), cb, cost, JuMP.index.(variables), values
+        JuMP.backend(model), cb, cost, JuMP.index.(variables), values, custom_data
     )
 end
 
@@ -89,3 +90,19 @@ function callback_ub(cbdata, x::JuMP.VariableRef)
         PricingVariableUpperBound(cbdata), index(x)
     )
 end
+
+"""
+    AbstractCustomData
+
+Every custom data assigned to a pricing variable or a user cut should inherit from it.
+"""
+abstract type AbstractCustomData end
+
+function MOI.submit(
+    model, cb, con, custom_data
+)
+    return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
+end
+MathOptInterface.Utilities.map_indices(
+    variable_map::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
+) = x

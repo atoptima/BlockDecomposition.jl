@@ -38,9 +38,28 @@ Base.isless(i::AxisId{N,T}, j::T) where {N,T} = isless(i.indice, j)
 Base.:(==)(i::T, j::AxisId{N,T}) where {N,T} = i == j.indice
 Base.:(==)(i::AxisId{N,T}, j::T) where {N,T} = i.indice == j
 
+# Allow matching of AxisId key in the DenseAxisArray
+Base.getindex(
+    ax::JuMP.Containers._AxisLookup{<:Base.OneTo}, 
+    k::AxisId{Name, T}
+) where {Name,T<:Integer} = getindex(ax, k.indice)
+
+Base.getindex(
+    x::JuMP.Containers._AxisLookup{Tuple{T,T}},
+    key::AxisId{Name,T},
+) where {Name, T} = getindex(x, key.indice)
+
+Base.getindex(
+    x::JuMP.Containers._AxisLookup{Dict{K,Int}}, 
+    key::AxisId{Name,K}
+) where {Name,K} = getindex(x, key.indice)
+
+# Iterate over the AxisId
 iterate(i::AxisId) = (i, nothing)
 iterate(i::AxisId, ::Any) = nothing
+
 Base.show(io::IO, i::AxisId) = show(io, i.indice)
+Base.length(i::AxisId) = 1
 
 struct Axis{Name, T}
     name::Symbol
@@ -67,11 +86,40 @@ vcat(A::BlockDecomposition.Axis, B::AbstractArray) = vcat(A.container, B)
 Base.isequal(i::Axis, j::Axis) = isequal(i.container, j.container)
 Base.hash(i::Axis, h::UInt) = hash(i.container, h)
 
+×(args...) = Iterators.product(args...)
+
 function _generate_axis(name, container)
     sym_name = Meta.parse("Symbol(\"" * string(name) * "\")")
     return :(BlockDecomposition.Axis($sym_name, $container))
 end
 
+"""
+    @axis(name, collection)
+
+Declare `collection` as an index-set of subproblems. 
+You can access the axis using the variable `name`.
+
+# Examples
+```julia-repl
+julia> @axis(K, 1:5)
+BlockDecomposition.Axis{:K, Int64}(:K, BlockDecomposition.AxisId{:K, Int64}[1, 2, 3, 4, 5])
+```
+
+In this example, we declare an axis named `K` that contains 5 entries. 
+The index-set of the subproblems is `[1, 2, 3, 4, 5]`.
+
+```julia-repl
+julia> K[1]
+1
+
+julia> typeof(K[1])
+BlockDecomposition.AxisId{:K, Int64}
+```
+
+The elements of the axis are `AxisId`. The user must use `AxisId` in the indices
+of the variables and the constraints because BlockDecomposition use them to 
+decompose the MIP.
+"""
 macro axis(args...)
     nbargs = length(args)
     nbargs > 2 && error("Axis declaration: too much arguments.")
@@ -81,6 +129,14 @@ macro axis(args...)
     if typeof(name) != Symbol
         error("First argument of @axis is incorrect. The axis name is expected.")
     end
-    exp = :($name = $(_generate_axis(name, container)))
+
+    container_exp = :()
+    if container isa Expr && container.head == :call
+        container_exp = :(collect($container))
+    else
+        container_exp = :($container)
+    end
+
+    exp = :($name = $(_generate_axis(name, container_exp)))
     return esc(exp)
 end
