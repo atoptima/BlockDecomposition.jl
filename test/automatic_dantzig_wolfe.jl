@@ -7,7 +7,7 @@ function test_automatic_dantzig_wolfe()
             @test e isa NoOptimizer
         end
         # all constraints build over the set machines are master constraints
-        # (due to the result of the plumple method that scores decompotions)
+        # (this is due to the result of the automatic decomposition using the "white score")
         machines = 1:4
         jobs = 1:30
         for j in jobs
