@@ -160,8 +160,7 @@ end
 Register a Dantzig-Wolfe decomposition on the JuMP model `model` where the index-set
 of the subproblems are `axis`.
 
-Create a variable `name` from which the user can access the node of the decomposition tree
-where the master of this decomposition is stored.
+Create a variable `name` from which the user can access the decomposition tree.
 """
 macro dantzig_wolfe_decomposition(args...)
     if length(args) != 3
@@ -181,8 +180,7 @@ end
 Register a Benders decomposition on the JuMP model `model` where the index-set
 of the subproblems are `axis`.
 
-Create a variable `name` from which the user can access the node of the Decomposition
-tree where the master of this decomposition is stored.
+Create a variable `name` from which the user can access decomposition tree.
 """
 macro benders_decomposition(args...)
     if length(args) != 3
