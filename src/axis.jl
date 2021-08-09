@@ -97,7 +97,7 @@ You can access the axis using the variable `name`.
 # Examples
 
 Consider a formulation that has a decomposition which gives raise to 5 subproblems.
-Let $\{1,2,3,4,5\} be the index-set of the subproblems.
+Let {1,2,3,4,5} be the index-set of the subproblems.
 
 To perform this decomposition with BlockDecomposition, we must declare an axis
 that contains the index-set of the subproblems :
@@ -143,4 +143,3 @@ macro axis(args...)
     exp = :($name = $(_generate_axis(name, container_exp)))
     return esc(exp)
 end
-
