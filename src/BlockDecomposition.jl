@@ -46,7 +46,7 @@ end
 """
     BlockModel(optimizer [, direct_model = false])
 
-Declare a JuMP hooked by the method that register the decomposition done by the user.
+Return a JuMP model which BlockDecomposition will decompose using instructions given by the user.
 
 If you define `direct_model = true`, the method creates the model with `JuMP.direct_model`,
 otherwise it uses `JuMP.Model`.

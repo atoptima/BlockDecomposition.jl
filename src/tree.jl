@@ -158,7 +158,7 @@ end
     @dantzig_wolfe_decomposition(model, name, axis)
 
 Register a Dantzig-Wolfe decomposition on the JuMP model `model` where the index-set
-of the subproblems are `axis`.
+of the subproblems is defined by the axis `axis`.
 
 Create a variable `name` from which the user can access the decomposition tree.
 """
@@ -178,7 +178,7 @@ end
     @benders_decomposition(model, name, axis)
 
 Register a Benders decomposition on the JuMP model `model` where the index-set
-of the subproblems are `axis`.
+of the subproblems is defined by the axis `axis`.
 
 Create a variable `name` from which the user can access decomposition tree.
 """
