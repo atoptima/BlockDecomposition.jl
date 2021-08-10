@@ -4,6 +4,26 @@ struct MockOptimizer <: MOI.AbstractOptimizer end
 
 MOI.is_empty(model::MockOptimizer) = true
 
+const SupportedObjFunc = Union{MOI.ScalarAffineFunction{Float64}, MOI.SingleVariable}
+
+const SupportedVarSets = Union{
+    MOI.ZeroOne, MOI.Integer, MOI.LessThan{Float64}, MOI.EqualTo{Float64}, 
+    MOI.GreaterThan{Float64}
+}
+
+const SupportedConstrFunc = Union{MOI.ScalarAffineFunction{Float64}}
+
+const SupportedConstrSets = Union{
+    MOI.EqualTo{Float64}, MOI.GreaterThan{Float64}, MOI.LessThan{Float64}
+}
+
+MOI.supports(::MockOptimizer, ::MOI.VariableName, ::Type{MOI.VariableIndex}) = true
+MOI.supports(::MockOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
+MOI.supports_constraint(::MockOptimizer, ::Type{<:SupportedConstrFunc}, ::Type{<:SupportedConstrSets}) = true
+MOI.supports_constraint(::MockOptimizer, ::Type{MOI.SingleVariable}, ::Type{<: SupportedVarSets}) = true
+MOI.supports(::MockOptimizer, ::MOI.ObjectiveFunction{<:SupportedObjFunc}) = true
+MOI.supports(::MockOptimizer, ::MOI.ObjectiveSense) = true
+
 function test_assignsolver()
 
     @testset "Assign default MOI mip solver" begin
