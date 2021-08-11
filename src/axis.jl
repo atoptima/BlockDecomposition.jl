@@ -95,15 +95,20 @@ Declare `collection` as an index-set of subproblems.
 You can access the axis using the variable `name`.
 
 # Examples
+
+Consider a formulation that has a decomposition which gives raise to 5 subproblems.
+Let {1,2,3,4,5} be the index-set of the subproblems.
+
+To perform this decomposition with BlockDecomposition, we must declare an axis
+that contains the index-set of the subproblems :
+
 ```julia-repl
-julia> @axis(K, 1:5)
+julia> L = 1:5
+1:5
+
+julia> @axis(K, L)
 BlockDecomposition.Axis{:K, Int64}(:K, BlockDecomposition.AxisId{:K, Int64}[1, 2, 3, 4, 5])
-```
 
-In this example, we declare an axis named `K` that contains 5 entries. 
-The index-set of the subproblems is `[1, 2, 3, 4, 5]`.
-
-```julia-repl
 julia> K[1]
 1
 
@@ -111,9 +116,12 @@ julia> typeof(K[1])
 BlockDecomposition.AxisId{:K, Int64}
 ```
 
-The elements of the axis are `AxisId`. The user must use `AxisId` in the indices
-of the variables and the constraints because BlockDecomposition use them to 
-decompose the MIP.
+The elements of the axis are `AxisId`. You must use `AxisId` in the indices of
+the variables and the constraints that you declare otherwise BlockDecomposition
+assign them to the master problem.
+
+    @variable(model, x[l in L]) # x[l] belongs to the master for any l ∈ L
+    @variable(model, y[k in K]) # y[k], k ∈ K, belongs to subproblem k (because K is an axis)
 """
 macro axis(args...)
     nbargs = length(args)
@@ -135,4 +143,3 @@ macro axis(args...)
     exp = :($name = $(_generate_axis(name, container_exp)))
     return esc(exp)
 end
-

@@ -43,6 +43,14 @@ function model_factory(::Val{false}, args...; kw...)::JuMP.Model
     return JuMP.Model(args...; kw...)
 end
 
+"""
+    BlockModel(optimizer [, direct_model = false])
+
+Return a JuMP model which BlockDecomposition will decompose using instructions given by the user.
+
+If you define `direct_model = true`, the method creates the model with `JuMP.direct_model`,
+otherwise it uses `JuMP.Model`.
+"""
 function BlockModel(args...; kw...)
     dm = haskey(kw, :direct_model) ? kw[:direct_model] : false
     m = model_factory(Val(dm), args...; kw...)
