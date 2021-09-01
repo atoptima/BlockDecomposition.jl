@@ -1,7 +1,7 @@
 
 # Available scores that can be used in an automatic Dantzig-Wolfe decomposition
-# inaktive means that automatic Dantzig-Wolfe is not used
-@enum(AutoDwStrategy, inaktive, white_score, block_border_score, relative_border_area_score)
+# inactive means that automatic Dantzig-Wolfe is not used
+@enum(AutoDwStrategy, inactive, white_score, block_border_score, relative_border_area_score)
 
 # Decomposes the given JuMP Model automatically
 function automatic_dw_decomposition!(model::JuMP.Model)
@@ -25,7 +25,7 @@ end
 
 # Finds the best decomposition structure to be used by the solver
 function get_best_block_structure(model::JuMP.Model)
-    @assert(model.ext[:automatic_dantzig_wolfe] != inaktive)
+    @assert(model.ext[:automatic_dantzig_wolfe] != inactive)
     block_structures = get_all_block_structures(model)
     score_type = model.ext[:automatic_dantzig_wolfe]
     if score_type == white_score

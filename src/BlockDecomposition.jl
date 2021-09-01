@@ -58,7 +58,7 @@ Return a JuMP model which BlockDecomposition will decompose using instructions g
 If you define `direct_model = true`, the method creates the model with `JuMP.direct_model`,
 otherwise it uses `JuMP.Model`.
 """
-function BlockModel(args...; automatic_dantzig_wolfe::AutoDwStrategy = inaktive, kw...)
+function BlockModel(args...; automatic_dantzig_wolfe::AutoDwStrategy = inactive, kw...)
     dm = haskey(kw, :direct_model) ? kw[:direct_model] : false
     m = model_factory(Val(dm), args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
@@ -67,7 +67,7 @@ function BlockModel(args...; automatic_dantzig_wolfe::AutoDwStrategy = inaktive,
 end
 
 function optimize!(m::JuMP.Model)
-    if m.ext[:automatic_dantzig_wolfe] != inaktive
+    if m.ext[:automatic_dantzig_wolfe] != inactive
         automatic_dw_decomposition!(m)
     end
     register_decomposition(m)
