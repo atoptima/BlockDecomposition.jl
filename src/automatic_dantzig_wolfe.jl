@@ -1,6 +1,23 @@
+"""
+The following scores rank bordered block-diagonal structures
+according to their suitability to a Dantzig-Wolfe reformulation.
 
-# Available scores that can be used in an automatic Dantzig-Wolfe decomposition
-# inactive means that automatic Dantzig-Wolfe is not used
+white_score:
+Prefer structures with a low relative border area and many blocks.
+
+block_border_score:
+Both the quality of the border area and of the block-diagonal
+are taken into account. Desired characteristics of the
+block-diagonal are granularity, homogeneity and isomorphism.
+Score is taken from https://doi.org/10.1287/ijoc.2017.0797.
+
+relative_border_area_score:
+Prefer structures with a low relative border area.
+Score is taken from https://doi.org/10.1007/s10107-014-0761-5.
+
+inactive:
+Automatic Dantzig-Wolfe decomposition is not used.
+"""
 @enum(AutoDwStrategy, inactive, white_score, block_border_score, relative_border_area_score)
 
 # Decomposes the given JuMP Model automatically
