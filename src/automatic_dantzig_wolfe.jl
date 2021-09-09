@@ -227,12 +227,12 @@ function get_model_description(model::JuMP.Model)
     constraints_to_axes = Dict{JuMP.ConstraintRef, Array{Axis}}()
     constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
     mdesc = ModelDescription(
-                               constraints,
-                               axes,
-                               variables,
-                               constraints_to_axes,
-                               constraints_to_variables
-                            )
+        constraints,
+        axes,
+        variables,
+        constraints_to_axes,
+        constraints_to_variables
+    )
     for k in keys(model.obj_dict)  # Check all names in the model
         reference = model.obj_dict[k]
         index_sets = _get_constraint_axes(reference)
