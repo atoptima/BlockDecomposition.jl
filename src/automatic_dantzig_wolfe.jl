@@ -46,14 +46,11 @@ function get_best_block_structure(model::JuMP.Model)
     block_structures = get_all_block_structures(model)
     score_type = model.ext[:automatic_dantzig_wolfe]
     if score_type == white_score
-        white_scores =  BlockDecomposition.white_scores(block_structures)
-        result = block_structures[argmax(white_scores)]
+        result = BlockDecomposition.best_white_score(block_structures)
     elseif score_type == block_border_score
-        block_border_scores = BlockDecomposition.block_border_scores(block_structures)
-        result = block_structures[argmax(block_border_scores)]
+        result = BlockDecomposition.best_block_border_score(block_structures)
     elseif score_type == relative_border_area_score
-        relative_border_area_scores = BlockDecomposition.relative_border_area_scores(block_structures)
-        result = block_structures[argmin(relative_border_area_scores)]
+        result = BlockDecomposition.best_relative_border_area_score(block_structures)
     end
     return result
 end
@@ -114,15 +111,13 @@ function structure_exists(
     return false
 end
 
-# This score is described in: Bergner, Martin, et al. 
-# "Automatic Dantzig–Wolfe reformulation of mixed integer programs."
-# Mathematical Programming 149.1-2 (2015): 391-424.
-function relative_border_area_scores(block_structures::Array{BlockStructure,1})
+function best_relative_border_area_score(block_structures::Array{BlockStructure,1})
     scores = Array{Float64,1}(undef, length(block_structures))
     for i in eachindex(block_structures)
         scores[i] = _get_relative_border_area_score(block_structures[i])
     end
-    return scores
+    result = block_structures[argmax(scores)]
+    return result
 end
 
 function _get_relative_border_area_score(block_structure::BlockStructure)
@@ -131,14 +126,13 @@ function _get_relative_border_area_score(block_structure::BlockStructure)
     score = n_linking_constraints/n_constraints
 end
 
-# This score is described in: Khaniyev, Taghi, Samir Elhedhli, and Fatih Safa Erenay.
-# "Structure detection in mixed-integer programs." INFORMS Journal on Computing 30.3 (2018): 570-587.
-function block_border_scores(block_structures::Array{BlockStructure,1})
+function best_block_border_score(block_structures::Array{BlockStructure,1})
     scores = Array{Float64,1}(undef, length(block_structures))
     for i in eachindex(block_structures)
         scores[i] = _get_block_border_score(block_structures[i])
     end
-    return scores
+    result = block_structures[argmax(scores)]
+    return result
 end
 
 function _get_block_border_score(block_structure::BlockStructure)
@@ -175,13 +169,13 @@ function _get_nb_nonzero_entries(
     return result
 end
 
-# Returns the relative amount of "white" in the matrix
-function white_scores(block_structures::Array{BlockStructure,1})
+function best_white_score(block_structures::Array{BlockStructure,1})
     scores = Array{Float64,1}(undef, length(block_structures))
     for i in eachindex(block_structures)
         scores[i] = _get_white_score(block_structures[i])
     end
-    return scores
+    result = block_structures[argmax(scores)]
+    return result
 end
 
 function _get_white_score(block_structure::BlockStructure)
