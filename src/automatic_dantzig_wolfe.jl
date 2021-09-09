@@ -58,7 +58,7 @@ end
 # Returns all possible block structures of the given model
 function get_all_block_structures(model::JuMP.Model)
     mdesc = get_model_description(model)
-    block_structures = Array{BlockStructure,1}()
+    block_structures = BlockStructure[]
     axesSets = collect(powerset(collect(mdesc.axes)))
     for axes in axesSets
         block_structure0, block_structure1 = get_block_structures(axes, mdesc, model)
@@ -352,7 +352,7 @@ end
 
 function _get_connected_components!(graph::MetaGraph)
     connected_components_int = connected_components(graph)
-    blocks = Array{Set{JuMP.ConstraintRef},1}()
+    blocks = Set{JuMP.ConstraintRef}[]
     for component_int in connected_components_int
             component_constraintref = Set{JuMP.ConstraintRef}()
             for vertex_int in component_int
