@@ -42,7 +42,7 @@ end
 
 # Finds the best decomposition structure to be used by the solver
 function get_best_block_structure(model::JuMP.Model)
-    @assert(model.ext[:automatic_dantzig_wolfe] != inactive)
+    @assert model.ext[:automatic_dantzig_wolfe] != inactive
     block_structures = get_all_block_structures(model)
     score_type = model.ext[:automatic_dantzig_wolfe]
     if score_type == white_score
