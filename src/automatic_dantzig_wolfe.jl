@@ -61,7 +61,7 @@ function get_all_block_structures(model::JuMP.Model)
     block_structures = Array{BlockStructure,1}()
     axesSets = collect(powerset(collect(mdesc.axes)))
     for axes in axesSets
-        block_structure0, block_structure1 = get_block_structure(axes, mdesc, model)
+        block_structure0, block_structure1 = get_block_structures(axes, mdesc, model)
         # Only add structures that were not found already and where the set of master
         # constraints is not empty
         if !structure_exists(block_structures, block_structure0) &&
@@ -320,7 +320,7 @@ end
 # In the first one (bs0) all constraints *not indexed by any* axis from
 # axes are in the master, in the second one (bs1), all constraints *indexed
 # by at least one* axis from axes are in the master
-function get_block_structure(
+function get_block_structures(
     axes::Array{<:Axis,1},
     mdesc::ModelDescription,
     model::JuMP.Model,
