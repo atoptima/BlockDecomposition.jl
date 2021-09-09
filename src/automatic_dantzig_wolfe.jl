@@ -37,7 +37,7 @@ function automatic_dw_decomposition!(model::JuMP.Model)
         DwPricingSp,
         DantzigWolfe
     )
-    return
+    return nothing
 end
 
 # Finds the best decomposition structure to be used by the solver
@@ -124,6 +124,7 @@ function _get_relative_border_area_score(block_structure::BlockStructure)
     n_linking_constraints = length(block_structure.master_constraints)
     n_constraints = length(block_structure.model_description.constraints)
     score = n_linking_constraints/n_constraints
+    return score
 end
 
 function best_block_border_score(block_structures::Array{BlockStructure,1})
@@ -217,6 +218,7 @@ function _add_anonymous_var_con!(mdesc::ModelDescription, model::JuMP.Model)
     for v in JuMP.all_variables(model)
         push!(mdesc.variables, JuMP.index(v))
     end
+    return nothing
 end
 
 # Returns an instance of the struct ModelDescription
@@ -264,6 +266,7 @@ function _add_constraint!(
     end
     o.constraints_to_axes[c] = index_sets
     o.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
+    return nothing
 end
 
 # Computes the index sets of the constraint reference
