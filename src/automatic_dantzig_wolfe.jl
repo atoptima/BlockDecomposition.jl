@@ -57,11 +57,11 @@ end
 
 # Returns all possible block structures of the given model
 function get_all_block_structures(model::JuMP.Model)
-    model_description = get_model_description(model)
+    mdesc = get_model_description(model)
     block_structures = Array{BlockStructure,1}()
-    axesSets = collect(powerset(collect(model_description.axes)))
+    axesSets = collect(powerset(collect(mdesc.axes)))
     for axes in axesSets
-        block_structure0, block_structure1 = get_block_structure(axes, model_description, model)
+        block_structure0, block_structure1 = get_block_structure(axes, mdesc, model)
         # Only add structures that were not found already and where the set of master
         # constraints is not empty
         if !structure_exists(block_structures, block_structure0) &&
@@ -160,11 +160,11 @@ end
 # Computes the number of nonzero entries in the given constraints
 function _get_nb_nonzero_entries(
     constraints::Set{JuMP.ConstraintRef},
-    model_description::ModelDescription
+    mdesc::ModelDescription
 )
     result = 0
     for c in constraints
-        result = result + length(model_description.constraints_to_variables[c])
+        result = result + length(mdesc.constraints_to_variables[c])
     end
     return result
 end
@@ -200,22 +200,22 @@ function _get_white_score(block_structure::BlockStructure)
     return white_score
 end
 
-# Add anonymous constraints and axes from the model to model_description (car)
-function _add_anonymous_var_con!(car::ModelDescription, model::JuMP.Model)
+# Add anonymous constraints and axes from the model to model_description (mdesc)
+function _add_anonymous_var_con!(mdesc::ModelDescription, model::JuMP.Model)
     types =  JuMP.list_of_constraint_types(model)
     for t in types
         if t[1] != VariableRef
             for c in JuMP.all_constraints(model, t[1], t[2])
-                if !in(c, car.constraints)
-                    push!(car.constraints, c)
-                    car.constraints_to_axes[c] = Array{Axis,1}()
-                    car.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
+                if !in(c, mdesc.constraints)
+                    push!(mdesc.constraints, c)
+                    mdesc.constraints_to_axes[c] = Array{Axis,1}()
+                    mdesc.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
                 end
             end
         end
     end
     for v in JuMP.all_variables(model)
-        push!(car.variables, JuMP.index(v))
+        push!(mdesc.variables, JuMP.index(v))
     end
 end
 
@@ -226,7 +226,7 @@ function get_model_description(model::JuMP.Model)
     variables = Set{MOI.VariableIndex}()
     constraints_to_axes = Dict{JuMP.ConstraintRef, Array{Axis}}()
     constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
-    model_description = ModelDescription(
+    mdesc = ModelDescription(
                                constraints,
                                axes,
                                variables,
@@ -238,7 +238,7 @@ function get_model_description(model::JuMP.Model)
         index_sets = _get_constraint_axes(reference)
         if eltype(reference) <: JuMP.ConstraintRef # Add constraint
             for c in reference
-                _add_constraint!(model_description, c, model, index_sets)
+                _add_constraint!(mdesc, c, model, index_sets)
             end
         elseif eltype(reference) <: JuMP.VariableRef # Add variable
             for v in reference
@@ -246,9 +246,9 @@ function get_model_description(model::JuMP.Model)
             end
         end
     end
-    model_description.variables = variables
-    _add_anonymous_var_con!(model_description, model)
-    return model_description
+    mdesc.variables = variables
+    _add_anonymous_var_con!(mdesc, model)
+    return mdesc
 end
 
 # Adds a constraint to the ModelDescription object o
@@ -319,30 +319,30 @@ end
 # by at least one* axis from axes are in the master
 function get_block_structure(
     axes::Array{<:Axis,1},
-    model_description::ModelDescription,
+    mdesc::ModelDescription,
     model::JuMP.Model,
 )
     block_constraints = Set{JuMP.ConstraintRef}()
     master_constraints = Set{JuMP.ConstraintRef}()
-    for c in keys(model_description.constraints_to_axes)
-        if  isempty(intersect(axes, model_description.constraints_to_axes[c]))
+    for c in keys(mdesc.constraints_to_axes)
+        if  isempty(intersect(axes, mdesc.constraints_to_axes[c]))
             push!(master_constraints, c)
         else
             push!(block_constraints, c)
         end
     end
     # Create first block structure
-    graph = _create_graph(block_constraints, model_description)
+    graph = _create_graph(block_constraints, mdesc)
     blocks = _get_connected_components!(graph)
     bs0 = BlockStructure(
-        model_description, master_constraints, axes, false, blocks, graph
+        mdesc, master_constraints, axes, false, blocks, graph
     )
     # Create second block structure (the roles of master constraints and block
     # constraints are switched)
-    graph = _create_graph(master_constraints, model_description)
+    graph = _create_graph(master_constraints, mdesc)
     blocks = _get_connected_components!(graph)
     bs1 = BlockStructure(
-        model_description, block_constraints, axes, true, blocks, graph
+        mdesc, block_constraints, axes, true, blocks, graph
     )
     return bs0, bs1
 end
@@ -362,7 +362,7 @@ end
 
 function _create_graph(
     vertices::Set{JuMP.ConstraintRef},
-    model_description::ModelDescription,
+    mdesc::ModelDescription,
 )
     graph = SimpleGraph(0)
     graph = MetaGraph(graph)
@@ -378,8 +378,8 @@ function _create_graph(
     for v1 in vertices, v2 in vertices
          if v1 != v2
             intersection = intersect(
-                model_description.constraints_to_variables[v1],
-                model_description.constraints_to_variables[v2],
+                mdesc.constraints_to_variables[v1],
+                mdesc.constraints_to_variables[v2],
             )
             if !isempty(intersection)
                 add_edge!(graph, graph[v1, :constraint_ref], graph[v2, :constraint_ref])
