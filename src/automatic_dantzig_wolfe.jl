@@ -22,20 +22,20 @@ Automatic Dantzig-Wolfe decomposition is not used.
 
 # Decomposes the given JuMP Model automatically
 function automatic_dw_decomposition!(model::JuMP.Model)
-    model.ext[:decomposition_structure] = BlockDecomposition.get_best_block_structure(model)
-    decomposition_axis = BlockDecomposition.Axis(
+    model.ext[:decomposition_structure] = get_best_block_structure(model)
+    decomposition_axis = Axis(
         1:length(model.ext[:decomposition_structure].blocks)
     )
-    decomposition = BlockDecomposition.decompose_leaf(
+    decomposition = decompose_leaf(
         model,
-        BlockDecomposition.DantzigWolfe,
+        DantzigWolfe,
         decomposition_axis
     )
-    BlockDecomposition.register_subproblems!(
+    register_subproblems!(
         decomposition,
         decomposition_axis,
-        BlockDecomposition.DwPricingSp,
-        BlockDecomposition.DantzigWolfe
+        DwPricingSp,
+        DantzigWolfe
     )
     return
 end
@@ -83,9 +83,9 @@ end
 # to compute different block structures
 mutable struct ModelDescription
     constraints::Set{JuMP.ConstraintRef}
-    axes::Set{BlockDecomposition.Axis}
+    axes::Set{Axis}
     variables::Set{MOI.VariableIndex}
-    constraints_to_axes::Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}
+    constraints_to_axes::Dict{JuMP.ConstraintRef, Array{Axis}}
     constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}
 end
 
@@ -93,7 +93,7 @@ struct BlockStructure
     # Constraints_and_axes is the same for every possible BlockStructure of a model
     model_description::ModelDescription
     master_constraints::Set{JuMP.ConstraintRef}
-    master_sets::Array{BlockDecomposition.Axis,1}
+    master_sets::Array{Axis,1}
     # Invert linked is true iff the linking constraints are the ones not indexed
     # by any set from master_sets
     invert_linking::Bool
@@ -214,7 +214,7 @@ function _add_anonymous_var_con!(car::ModelDescription, model::JuMP.Model)
             for c in JuMP.all_constraints(model, t[1], t[2])
                 if !in(c, car.constraints)
                     push!(car.constraints, c)
-                    car.constraints_to_axes[c] = Array{BlockDecomposition.Axis,1}()
+                    car.constraints_to_axes[c] = Array{Axis,1}()
                     car.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
                 end
             end
@@ -228,9 +228,9 @@ end
 # Returns an instance of the struct ModelDescription
 function get_model_description(model::JuMP.Model)
     constraints = Set{JuMP.ConstraintRef}()
-    axes = Set{BlockDecomposition.Axis}()
+    axes = Set{Axis}()
     variables = Set{MOI.VariableIndex}()
-    constraints_to_axes = Dict{JuMP.ConstraintRef, Array{BlockDecomposition.Axis}}()
+    constraints_to_axes = Dict{JuMP.ConstraintRef, Array{Axis}}()
     constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
     model_description = ModelDescription(
                                constraints,
@@ -280,7 +280,7 @@ function _get_constraint_axes(constraint_ref::AbstractArray)
 end
 
 function _get_constraint_axes(constraint_ref::JC.DenseAxisArray)
-    axes_of_constraint = Array{BlockDecomposition.Axis,1}()
+    axes_of_constraint = Array{Axis,1}()
     for a in constraint_ref.axes
         if a != 1   # Axes of the form 1:1 do not matter (single constraints)
             push!(axes_of_constraint, Axis(a))
@@ -303,7 +303,7 @@ function _get_constraint_axes(constraint_ref::JC.SparseAxisArray)
             push!(axes[j], index[j])
         end
     end
-    result = Array{BlockDecomposition.Axis,1}()
+    result = Array{Axis,1}()
     for a in axes
         push!(result, Axis(a))
     end
