@@ -78,7 +78,7 @@ end
 
 # Contains all the information about the constraints and variables in a model we might need
 # to compute different block structures
-mutable struct ModelDescription
+struct ModelDescription
     constraints::Set{JuMP.ConstraintRef}
     axes::Set{Axis}
     variables::Set{MOI.VariableIndex}
@@ -202,21 +202,27 @@ function _get_white_score(block_structure::BlockStructure)
 end
 
 # Add anonymous constraints and axes from the model to model_description (mdesc)
-function _add_anonymous_var_con!(mdesc::ModelDescription, model::JuMP.Model)
-    types =  JuMP.list_of_constraint_types(model)
+function _add_anonymous_var_con!(
+    constraints::Set{JuMP.ConstraintRef},
+    constraints_to_axes::Dict{JuMP.ConstraintRef, Array{Axis}},
+    constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}},
+    variables::Set{MOI.VariableIndex},
+    model::JuMP.Model
+)
+    types = JuMP.list_of_constraint_types(model)
     for t in types
         if t[1] != VariableRef
             for c in JuMP.all_constraints(model, t[1], t[2])
-                if !in(c, mdesc.constraints)
-                    push!(mdesc.constraints, c)
-                    mdesc.constraints_to_axes[c] = Array{Axis,1}()
-                    mdesc.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
+                if !in(c, constraints)
+                    push!(constraints, c)
+                    constraints_to_axes[c] = Axis[]
+                    constraints_to_variables[c] = _get_variables_in_constraint(model, c)
                 end
             end
         end
     end
     for v in JuMP.all_variables(model)
-        push!(mdesc.variables, JuMP.index(v))
+        push!(variables, JuMP.index(v))
     end
     return nothing
 end
@@ -228,19 +234,20 @@ function get_model_description(model::JuMP.Model)
     variables = Set{MOI.VariableIndex}()
     constraints_to_axes = Dict{JuMP.ConstraintRef, Array{Axis}}()
     constraints_to_variables = Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}}()
-    mdesc = ModelDescription(
-        constraints,
-        axes,
-        variables,
-        constraints_to_axes,
-        constraints_to_variables
-    )
     for k in keys(model.obj_dict)  # Check all names in the model
         reference = model.obj_dict[k]
         index_sets = _get_constraint_axes(reference)
         if eltype(reference) <: JuMP.ConstraintRef # Add constraint
             for c in reference
-                _add_constraint!(mdesc, c, model, index_sets)
+                _add_constraint!(
+                    constraints,
+                    constraints_to_axes,
+                    constraints_to_variables,
+                    axes,
+                    c,
+                    model,
+                    index_sets
+                )
             end
         elseif eltype(reference) <: JuMP.VariableRef # Add variable
             for v in reference
@@ -248,24 +255,39 @@ function get_model_description(model::JuMP.Model)
             end
         end
     end
-    mdesc.variables = variables
-    _add_anonymous_var_con!(mdesc, model)
+    _add_anonymous_var_con!(
+        constraints,
+        constraints_to_axes,
+        constraints_to_variables,
+        variables,
+        model
+    )
+    mdesc = ModelDescription(
+        constraints,
+        axes,
+        variables,
+        constraints_to_axes,
+        constraints_to_variables
+    )
     return mdesc
 end
 
 # Adds a constraint to the ModelDescription object o
 function _add_constraint!(
-    o::ModelDescription,
+    constraints::Set{JuMP.ConstraintRef},
+    constraints_to_axes::Dict{JuMP.ConstraintRef, Array{Axis}},
+    constraints_to_variables::Dict{JuMP.ConstraintRef, Set{MOI.VariableIndex}},
+    axes::Set{Axis},
     c::JuMP.ConstraintRef,
     model::JuMP.Model,
-    index_sets
+    index_sets::Array{Axis,1}
 )
-    push!(o.constraints, c)
+    push!(constraints, c)
     for r in index_sets
-        push!(o.axes, r)
+        push!(axes, r)
     end
-    o.constraints_to_axes[c] = index_sets
-    o.constraints_to_variables[c] = _get_variables_in_constraint(model, c)
+    constraints_to_axes[c] = index_sets
+    constraints_to_variables[c] = _get_variables_in_constraint(model, c)
     return nothing
 end
 
@@ -277,7 +299,7 @@ function _get_constraint_axes(constraint_ref::AbstractArray)
 end
 
 function _get_constraint_axes(constraint_ref::JC.DenseAxisArray)
-    axes_of_constraint = Array{Axis,1}()
+    axes_of_constraint = Axis[]
     for a in constraint_ref.axes
         if a != 1   # Axes of the form 1:1 do not matter (single constraints)
             push!(axes_of_constraint, Axis(a))
