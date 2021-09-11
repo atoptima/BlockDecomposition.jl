@@ -50,7 +50,8 @@ function register_automatic_dantzig_wolfe(model::JuMP.Model)
     end
     # Annotate all other variables
     all_variables = MathOptInterface.get(model, MathOptInterface.ListOfVariableIndices())
-    _annotate_elements!(model, [JuMP.VariableRef(model, v) for v in collect(setdiff(all_variables, annotated_variables))], tree)
+    not_annotated_vars = [JuMP.VariableRef(model, v) for v in collect(setdiff(all_variables, annotated_variables))]
+    _annotate_elements!(model, not_annotated_vars, tree)
 end
 
 _getrootmasterannotation(tree) = tree.root.master
