@@ -96,6 +96,20 @@ struct BlockStructure
     invert_linking::Bool
     blocks::Array{Set{JuMP.ConstraintRef},1}
     graph::MetaGraph
+    BlockStructure(
+        model_description,
+        master_constraints,
+        master_sets,
+        invert_linking,
+        graph
+    ) =  new(
+        model_description,
+        master_constraints,
+        master_sets,
+        invert_linking,
+        _get_connected_components!(graph),
+        graph
+    )
 end
 
 # Returns true if and only if block_structure already exists in block_structures
@@ -360,14 +374,14 @@ function get_block_structures(
     graph = _create_graph(block_constraints, mdesc)
     blocks = _get_connected_components!(graph)
     bs0 = BlockStructure(
-        mdesc, master_constraints, axes, false, blocks, graph
+        mdesc, master_constraints, axes, false, graph
     )
     # Create second block structure (the roles of master constraints and block
     # constraints are switched)
     graph = _create_graph(master_constraints, mdesc)
     blocks = _get_connected_components!(graph)
     bs1 = BlockStructure(
-        mdesc, block_constraints, axes, true, blocks, graph
+        mdesc, block_constraints, axes, true, graph
     )
     return bs0, bs1
 end
