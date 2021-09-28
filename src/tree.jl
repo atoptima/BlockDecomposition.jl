@@ -135,6 +135,13 @@ function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
     return gettree(m).root                  # return the root node of the new tree
 end
 
+function decompose_leaf(::JuMP.Model, D::Type{<: Decomposition}, axis)
+    err_msg = """Decomposition must be done over an axis.
+    Getting started guide available at https://atoptima.github.io/Coluna.jl/stable/start/start/
+    """
+    error(err_msg)
+end
+
 function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
     error("BlockDecomposition does not support nested decomposition yet.")
     return

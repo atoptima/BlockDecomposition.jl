@@ -169,6 +169,19 @@ function dummymodel3()
     return model, x, mast, sp, dec
 end
 
+function dummymodel4()
+    model = BD.BlockModel()
+    A = 1:5
+    B = 1:4
+    C = [2:(b+5) for b in B]
+    @variable(model, x[a in A, b in B, c in C[b]], Int)
+    @constraint(model, sp[a in A, b in B], sum(x[a,b,c] for c in C[b]) >= 1)
+    @constraint(model, mast, sum(x[a,b,c] for a in A, b in B, c in C[b]) == 2)
+    @objective(model, Min, sum(x[a,b,c] for a in A, b in B, c in C[b]))
+    @dantzig_wolfe_decomposition(model, dec, A) # try to decompose over an array -> error
+    return model, x, sp, mast, dec
+end
+
 function test_dummy_model_decompositions()
     @testset "Model with Arrays" begin
         model, y, z, fix, cov, knp, dec = dummymodel1()
@@ -222,6 +235,10 @@ function test_dummy_model_decompositions()
         @test mast_annotation === nothing # anonymous constraint
         sp_annotation = BD.annotation(model, sp[1])
         @test sp_annotation === nothing # anonymous constraint
+    end
+
+    @testset "Decomposition over an array" begin
+        @test_throws ErrorException dummymodel4()
     end
     return
 end
