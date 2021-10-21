@@ -130,7 +130,7 @@ function best_relative_border_area_score(block_structures::Array{BlockStructure,
     for i in eachindex(block_structures)
         scores[i] = _get_relative_border_area_score(block_structures[i])
     end
-    result = block_structures[argmax(scores)]
+    result = block_structures[argmin(scores)]
     return result
 end
 
