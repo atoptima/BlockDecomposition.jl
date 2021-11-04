@@ -89,5 +89,5 @@ function _get_following_constraints(lines::Vector{String}, index::Int)
         end
         push!(constraint_names, head)
     end
-    return constraint_names, length(lines)
+    return constraint_names, length(lines)+1
 end
