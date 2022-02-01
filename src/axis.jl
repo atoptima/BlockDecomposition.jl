@@ -30,6 +30,7 @@ Base.to_index(i::AxisId) = i.indice
 
 # Allow matching of AxisId key using the value of field indice (dict.jl:289)
 # and vice-versa
+Base.isequal(i::AxisId{N,T}, j::AxisId{N,T}) where {N,T} = isequal(i.indice, j.indice)
 Base.isequal(i::T, j::AxisId{N,T}) where {N,T} = isequal(i, j.indice)
 Base.isequal(i::AxisId{N,T}, j::T) where {N,T} = isequal(i.indice, j)
 Base.isless(i::T, j::AxisId{N,T}) where {N,T} = isless(i, j.indice)
@@ -65,13 +66,15 @@ struct Axis{Name, T}
     container::Vector{AxisId{Name, T}}
 end
 
-function Axis(name::Symbol, container::A) where {T, A <: AbstractArray{T}}
+function Axis(name::Symbol, container::A) where {T, A <: Union{AbstractArray{T}, Set{T}}}
     indices = AxisId{name, T}[]
     for val in container
         push!(indices, AxisId{name, T}(val))
     end
     return Axis{name, T}(name, indices)
 end
+
+Axis(container) = Axis(Symbol(), container)
 
 name(axis::Axis) =  axis.name
 iterate(axis::Axis) = iterate(axis.container)
@@ -80,6 +83,8 @@ length(axis::Axis) = length(axis.container)
 getindex(axis::Axis, elements) = getindex(axis.container, elements)
 lastindex(axis::Axis) = lastindex(axis.container)
 vcat(A::BlockDecomposition.Axis, B::AbstractArray) = vcat(A.container, B)
+Base.isequal(i::Axis, j::Axis) = isequal(i.container, j.container)
+Base.hash(i::Axis, h::UInt) = hash(i.container, h)
 
 ×(args...) = Iterators.product(args...)
 
@@ -142,4 +147,5 @@ macro axis(args...)
 
     exp = :($name = $(_generate_axis(name, container_exp)))
     return esc(exp)
+
 end

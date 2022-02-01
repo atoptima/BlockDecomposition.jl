@@ -33,6 +33,20 @@ function generalized_assignement(d::GapData)
     return model, x, cov, knp, decomposition
 end
 
+function generalized_assignment_automatic_dantzig_wolfe(d::GapData, score::AutoDwStrategy)
+    model = BlockModel(automatic_dantzig_wolfe = score)
+    @variable(model, x[m in d.machines, j in d.jobs], Bin)
+    @constraint(model, cov[j in d.jobs], sum(x[m, j] for m in d.machines) >= 1)
+    @constraint(
+        model,
+        knp[m in d.machines],
+        sum(d.weights[j, m] * x[m, j] for j in d.jobs) <= d.capacities[m]
+    )
+    @objective(model, Min, sum(d.costs[j, m] * x[m, j] for m in d.machines, j in d.jobs))
+
+    return model, x, cov, knp
+end
+
 # Test pure master variables, constraint without id & variables without id
 function generalized_assignement_penalties(d::GapData)
     BD.@axis(Machines, d.machines)

@@ -1,6 +1,12 @@
 module BlockDecomposition
 
-using JuMP, MathOptInterface
+using Combinatorics: powerset
+using JuMP
+using LightGraphs: SimpleGraph, add_vertices!, nv
+using MathOptInterface
+using MetaGraphs: MetaGraph, add_edge!, connected_components, edges, intersect,
+    set_indexing_prop!, set_prop!, vertices
+
 import MathOptInterface
 import MathOptInterface.Utilities
 
@@ -11,8 +17,8 @@ const JC = JuMP.Containers
 export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems, ×, indice,
        objectiveprimalbound!, objectivedualbound!, branchingpriority!, branchingpriority,
        customvars!, customconstrs!, customvars, customconstrs
-
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
+export AutoDwStrategy
 
 include("axis.jl")
 include("annotations.jl")
@@ -21,6 +27,7 @@ include("formulations.jl")
 include("decomposition.jl")
 include("objective.jl")
 include("callbacks.jl")
+include("automatic_dantzig_wolfe.jl")
 include("utils.jl")
 include("branchingpriority.jl")
 include("customdata.jl")
@@ -51,14 +58,18 @@ Return a JuMP model which BlockDecomposition will decompose using instructions g
 If you define `direct_model = true`, the method creates the model with `JuMP.direct_model`,
 otherwise it uses `JuMP.Model`.
 """
-function BlockModel(args...; kw...)
+function BlockModel(args...; automatic_dantzig_wolfe::AutoDwStrategy = inactive, kw...)
     dm = haskey(kw, :direct_model) ? kw[:direct_model] : false
     m = model_factory(Val(dm), args...; kw...)
     JuMP.set_optimize_hook(m, optimize!)
+    m.ext[:automatic_dantzig_wolfe] = automatic_dantzig_wolfe
     return m
 end
 
 function optimize!(m::JuMP.Model)
+    if m.ext[:automatic_dantzig_wolfe] != inactive
+        automatic_dw_decomposition!(m)
+    end
     register_decomposition(m)
     return JuMP.optimize!(m, ignore_optimize_hook = true)
 end
