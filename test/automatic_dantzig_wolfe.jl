@@ -8,7 +8,7 @@ function test_automatic_dantzig_wolfe()
         try
             JuMP.optimize!(model)
         catch e
-            @test e isa NoOptimizer
+           @test e isa NoOptimizer
         end
         machines = 1:4
         jobs = 1:30
@@ -18,7 +18,7 @@ function test_automatic_dantzig_wolfe()
             test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
             for m in machines
                 x_ann = BD.annotation(model, x[m, j])
-                test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+                test_annotation(x_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
             end
         end
         for m in machines
@@ -45,7 +45,7 @@ function test_automatic_dantzig_wolfe()
             test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
             for m in machines
                 x_ann = BD.annotation(model, x[m, j])
-                test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+                test_annotation(x_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
             end
         end
         for m in machines
@@ -71,7 +71,7 @@ function test_automatic_dantzig_wolfe()
             test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
             for m in machines
                 x_ann = BD.annotation(model, x[m, j])
-                test_annotation(cov_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+                test_annotation(x_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
             end
         end
         for m in machines

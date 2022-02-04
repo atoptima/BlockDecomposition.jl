@@ -2,7 +2,7 @@ module BlockDecomposition
 
 using Combinatorics: powerset
 using JuMP
-using LightGraphs: SimpleGraph, add_vertices!, nv
+using Graphs: SimpleGraph, add_vertices!, nv
 using MathOptInterface
 using MetaGraphs: MetaGraph, add_edge!, connected_components, edges, intersect,
     set_indexing_prop!, set_prop!, vertices
