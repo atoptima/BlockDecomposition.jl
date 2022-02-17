@@ -10,4 +10,4 @@ BlockDecomposition is a package providing features to take advantage of the shap
 Although BlockDecomposition is a JuMP extension, 
 it is not written nor maintained by the primary developers of JuMP.
 
-[Example for Dantzig-Wolfe decomposition](https://atoptima.github.io/Coluna.jl/latest/user/start/)
+[Example for Dantzig-Wolfe decomposition](https://atoptima.github.io/Coluna.jl/latest/start/start/)
