@@ -18,18 +18,8 @@ function test_DenseAxisArray_usage()
     @axis(aC, cC) 
 
     # Make sure we can use either the axis or the container to get a variable
-    @variable(model, x0[cA, cB, cC])
     @variable(model, x1[aA, aB, aC])
     @test x1 isa JuMP.Containers.DenseAxisArray
-
-    @show axes(x1)
-
-    @show (cA[1], cB[1], cC[1])
-    @show (aA[1], aB[1], aC[1])
-    @show  x0[1,5,10]
-    @show  x1[cA[1], cB[1], cC[1]]
-    @show x1[aA[1], aB[1], aC[1]]
-
     @test x1[cA[1], cB[1], cC[1]] == x1[aA[1], aB[1], aC[1]]
 
     @variable(model, x2[aA, aB, cC])
