@@ -347,7 +347,7 @@ function _get_variables_in_constraint(model::JuMP.Model, constraint::JuMP.Constr
     f = MOI.get(model, MathOptInterface.ConstraintFunction(), constraint)
     variables = Set{MOI.VariableIndex}()
     for term in f.terms
-        push!(variables, term.variable_index)
+        push!(variables, term.variable)
     end
     return variables
 end

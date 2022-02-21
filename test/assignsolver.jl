@@ -4,7 +4,7 @@ struct MockOptimizer <: MOI.AbstractOptimizer end
 
 MOI.is_empty(model::MockOptimizer) = true
 
-const SupportedObjFunc = Union{MOI.ScalarAffineFunction{Float64}, MOI.SingleVariable}
+const SupportedObjFunc = Union{MOI.ScalarAffineFunction{Float64}, MOI.VariableIndex}
 
 const SupportedVarSets = Union{
     MOI.ZeroOne, MOI.Integer, MOI.LessThan{Float64}, MOI.EqualTo{Float64}, 
@@ -20,7 +20,7 @@ const SupportedConstrSets = Union{
 MOI.supports(::MockOptimizer, ::MOI.VariableName, ::Type{MOI.VariableIndex}) = true
 MOI.supports(::MockOptimizer, ::MOI.ConstraintName, ::Type{<:MOI.ConstraintIndex}) = true
 MOI.supports_constraint(::MockOptimizer, ::Type{<:SupportedConstrFunc}, ::Type{<:SupportedConstrSets}) = true
-MOI.supports_constraint(::MockOptimizer, ::Type{MOI.SingleVariable}, ::Type{<: SupportedVarSets}) = true
+MOI.supports_constraint(::MockOptimizer, ::Type{MOI.VariableIndex}, ::Type{<: SupportedVarSets}) = true
 MOI.supports(::MockOptimizer, ::MOI.ObjectiveFunction{<:SupportedObjFunc}) = true
 MOI.supports(::MockOptimizer, ::MOI.ObjectiveSense) = true
 
