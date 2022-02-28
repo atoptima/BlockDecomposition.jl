@@ -23,6 +23,14 @@ function indice(i::AxisId{Name,T})::T where {Name,T}
     return i.indice
 end
 
+# Allow conversion any instance of AxisId{Name, T} to an instance of T.
+# Note that this conversion leads to a loose of information (Name).
+# Conversion in the other way around is not possible.
+convert(::Type{T}, i::AxisId{Name,T}) where {Name, T} = i.indice
+promote_rule(::Type{T}, ::Type{AxisId{Name,T}}) where {Name,T} = T
+
+Base.getindex(x::JuMP.Containers._AxisLookup{Dict{AxisId{Name,T},N}}, key::T) where {Name,T,N} = x.data[key]
+
 Base.hash(i::AxisId, h::UInt) = hash(i.indice, h)
 
 # Permit the access to the entry of an array using an AxisId.
@@ -147,5 +155,4 @@ macro axis(args...)
 
     exp = :($name = $(_generate_axis(name, container_exp)))
     return esc(exp)
-
 end

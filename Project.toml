@@ -14,8 +14,8 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [compat]
 Combinatorics = "1.0.2"
 Graphs = "~1.5"
-JuMP = "~0.21.7"
-MathOptInterface = "~0.9.10"
+JuMP = "~0.22"
+MathOptInterface = "~0.10"
 MetaGraphs = "~0.7"
 julia = "1"
 
