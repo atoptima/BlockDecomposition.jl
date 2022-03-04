@@ -8,7 +8,7 @@ or the constraint is located.
 This method is called by the `JuMP.optimize!` hook.
 """
 function register_decomposition(model::JuMP.Model)
-    if model.ext[:automatic_dantzig_wolfe] != inactive
+    if haskey(model.ext, :automatic_dantzig_wolfe) && model.ext[:automatic_dantzig_wolfe] != inactive
         register_automatic_dantzig_wolfe(model)
     else
         tree = gettree(model)
