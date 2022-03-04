@@ -67,7 +67,7 @@ function BlockModel(args...; automatic_dantzig_wolfe::AutoDwStrategy = inactive,
 end
 
 function optimize!(m::JuMP.Model)
-    if m.ext[:automatic_dantzig_wolfe] != inactive
+    if haskey(m.ext, :automatic_dantzig_wolfe) && m.ext[:automatic_dantzig_wolfe] != inactive
         automatic_dw_decomposition!(m)
     end
     register_decomposition(m)
