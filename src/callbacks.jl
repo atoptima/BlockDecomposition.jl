@@ -22,6 +22,21 @@ function MOI.submit(
 end
 
 """
+    PricingDualBound(cbdata)
+
+Dual bound of the pricing subproblem.
+This bound is used to compute the contribution of the subproblem to the dual bound
+in column generation.
+"""
+struct PricingDualBound{CbDataType} <: MOI.AbstractSubmittable
+    callback_data::CbDataType
+end
+
+function MOI.submit(model::Model, cb::PricingDualBound, bound)
+    return MOI.submit(JuMP.backend(model), cb, bound)
+end
+
+"""
     PricingVariableCost(cbdata)
 
 A variable attribute to get the reduced cost of a variable within a pricing
