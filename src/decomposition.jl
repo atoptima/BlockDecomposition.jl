@@ -16,6 +16,9 @@ function register_decomposition(model::JuMP.Model)
         for (_, jump_obj) in model.obj_dict
             _annotate_elements!(model, jump_obj, tree)
         end
+        for (_, jump_obj) in model.obj_dict
+            _check_annotations(model, jump_obj)
+        end
     end
     return
 end
@@ -121,8 +124,13 @@ struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 struct DecompositionTree <: MOI.AbstractModelAttribute end
 
-setannotation!(model, obj::JuMP.ConstraintRef, a) = MOI.set(model, ConstraintDecomposition(), obj, a)
-setannotation!(model, obj::JuMP.VariableRef, a) = MOI.set(model, VariableDecomposition(), obj, a)
+function setannotation!(model, obj::JuMP.ConstraintRef, a)
+    MOI.set(model, ConstraintDecomposition(), obj, a)
+end
+
+function setannotation!(model, obj::JuMP.VariableRef, a)
+    MOI.set(model, VariableDecomposition(), obj, a)
+end
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
         ci::MOI.ConstraintIndex, annotation::Annotation)
