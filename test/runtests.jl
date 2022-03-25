@@ -1,10 +1,16 @@
-using BlockDecomposition
-
+using BlockDecomposition, MathOptInterface
 using Test
 using JuMP
 
 const BD = BlockDecomposition
 
+# Mock optimizer
+struct MockOptimizer <: MathOptInterface.AbstractOptimizer end
+MOI.empty!(::MockOptimizer) = nothing
+MOI.copy_to(::MockOptimizer, ::MOI.ModelLike) = MOI.IndexMap()
+MOI.optimize!(::MockOptimizer) = nothing
+
+# Helper to tests annotations
 function test_annotation(ann::BD.Annotation, F::Type{<:BD.Formulation}, 
         D::Type{<:BD.Decomposition}, minmult, maxmult)
     @test BD.getformulation(ann) == F

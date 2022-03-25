@@ -124,10 +124,9 @@ function _acc_check_dec_constr(
     ::Annotation{T,F,D}
 ) where {T,F<:Master,D<:DantzigWolfe}
     prev_ann = nothing
-    all_in_same_annotation = true
     annotations = Iterators.map(((var, _),) -> MOI.get(model, VariableDecomposition(), var), func.terms)
     for annotation in annotations
-        if annotation.formulation != DwPricingSp ||
+        if annotation.formulation != DwPricingSp || annotation.upper_multiplicity > 1 ||
             (!isnothing(prev_ann) && getid(prev_ann) != getid(annotation))
             return
         end
