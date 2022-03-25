@@ -1,3 +1,34 @@
+# Errors or warnings
+
+"""
+    MasterVarInDwSp
+
+Error thrown when a master variable is in a constraint that belongs to a Dantzig-Wolfe
+subproblem.
+
+You can retrieve the JuMP variable and the JuMP constraint where the error occurs:
+```julia
+error.variable
+error.constraint
+```
+"""
+struct MasterVarInDwSp 
+    variable::JuMP.VariableRef
+    constraint::JuMP.ConstraintRef
+end
+
+"""
+    VarsOfSameDwSpInMaster
+
+Warning when a master constraint involves variables that belong to the same Dantzig-Wolfe
+subproblem.
+"""
+struct VarsOfSameDwSpInMaster
+    constraint::JuMP.ConstraintRef
+end
+
+# Methods to check constraints and variables.
+
 function _check_annotations(model::JuMP.Model, container::JC.DenseAxisArray)
     for indice_set in Iterators.product(container.axes...)
         _check_annotations(model, container[indice_set...])
@@ -29,6 +60,21 @@ function _check_annotations(model::JuMP.Model, container::AbstractArray)
     return
 end
 
+# Type of checks
+abstract type DecompositionCheck end
+
+# when the verfication consists in checking the annotation of an element in another one 
+# without caring about the previous verifications
+abstract type IndepDecompositionCheck <: DecompositionCheck end
+
+# when the verfication consists in checking the annotation of an element in another one 
+# with caring about the previous verifications (=> accumulator)
+abstract type AccDecompositionCheck <: DecompositionCheck end
+
+struct MasterVarInDwSpCheck <: IndepDecompositionCheck end
+struct VarsOfSameDwSpInMasterCheck <: AccDecompositionCheck end
+
+
 # check_annotation methods
 
 _check_annotation(model, elem) = nothing # fallback
@@ -40,37 +86,62 @@ function _check_annotation(model, constr::JuMP.ConstraintRef)
     return
 end
 
-"""
-    MasterVarInDwSp
-
-Error thrown when a master variable is in a constraint that belongs to a Dantzig-Wolfe
-subproblem.
-
-You can retrieve the JuMP variable and the JuMP constraint where the error occurs:
-```julia
-error.variable
-error.constraint
-```
-"""
-struct MasterVarInDwSp 
-    variable::JuMP.VariableRef
-    constraint::JuMP.ConstraintRef
-end
-
 # fallback
-_check_dec_constr(::JuMP.Model, ::JuMP.VariableRef, ::JuMP.ConstraintRef, ::Annotation{T,F,D}) where {T,F,D} = nothing
+_check_dec_constr(
+    ::IndepDecompositionCheck,
+    ::JuMP.Model,
+    ::JuMP.VariableRef,
+    ::JuMP.ConstraintRef,
+    ::Annotation{T,F,D}
+) where {T,F,D} = nothing
 
-function _check_dec_constr(model::JuMP.Model, var::JuMP.VariableRef, constr::JuMP.ConstraintRef, ::Annotation{T,F,D}) where {T,F<:DwPricingSp,D<:DantzigWolfe}
+_acc_check_dec_constr(
+    ::AccDecompositionCheck,
+    ::JuMP.Model,
+    ::JuMP.AffExpr,
+    ::JuMP.ConstraintRef,
+    ::Annotation{T,F,D}
+) where {T,F,D} = nothing
+
+function _check_dec_constr(
+    ::MasterVarInDwSpCheck,
+    model::JuMP.Model,
+    var::JuMP.VariableRef,
+    constr::JuMP.ConstraintRef,
+    ::Annotation{T,F,D}
+) where {T,F<:DwPricingSp,D<:DantzigWolfe}
     if MOI.get(model, VariableDecomposition(), var).formulation == Master
         throw(MasterVarInDwSp(var, constr))
     end
     return
 end
 
-function _check_dec_constr(model::JuMP.Model, func::JuMP.AffExpr, constr::JuMP.ConstraintRef, a)
-    for (var, _) in func.terms
-        _check_dec_constr(model, var, constr, a)
+function _acc_check_dec_constr(
+    ::VarsOfSameDwSpInMasterCheck,
+    model::JuMP.Model,
+    func::JuMP.AffExpr,
+    constr::JuMP.ConstraintRef,
+    ::Annotation{T,F,D}
+) where {T,F<:Master,D<:DantzigWolfe}
+    prev_ann = nothing
+    all_in_same_annotation = true
+    annotations = Iterators.map(((var, _),) -> MOI.get(model, VariableDecomposition(), var), func.terms)
+    for annotation in annotations
+        if annotation.formulation != DwPricingSp ||
+            (!isnothing(prev_ann) && getid(prev_ann) != getid(annotation))
+            return
+        end
+        prev_ann = annotation
     end
+    @warn(VarsOfSameDwSpInMaster(constr))
+    return
+end
+
+function _check_dec_constr(model::JuMP.Model, func::JuMP.AffExpr, constr::JuMP.ConstraintRef, annotation)
+    for (var, _) in func.terms
+        _check_dec_constr(MasterVarInDwSpCheck(), model, var, constr, annotation)
+    end
+    _acc_check_dec_constr(VarsOfSameDwSpInMasterCheck(), model, func, constr, annotation)
     return
 end
 
