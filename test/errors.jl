@@ -53,7 +53,10 @@ function vars_of_same_sp_in_master()
 
     @dantzig_wolfe_decomposition(model, dec, J)
 
-    @test_warn repr(BlockDecomposition.VarsOfSameDwSpInMaster(c3)) JuMP.optimize!(model)
+    @static if VERSION >= v"1.7"
+        check_warn(msg) = occursin("BlockDecomposition.VarsOfSameDwSpInMaster(c3", msg)
+        @test_warn check_warn JuMP.optimize!(model)
+    end
     return
 end
 
@@ -69,7 +72,10 @@ function vars_of_same_sp_in_master2()
 
     @dantzig_wolfe_decomposition(model, dec, J)
 
-    @test_warn repr(BlockDecomposition.VarsOfSameDwSpInMaster(c3[3])) JuMP.optimize!(model)
+    @static if VERSION >= v"1.7"
+        check_warn(msg) = occursin("BlockDecomposition.VarsOfSameDwSpInMaster(c3[3]", msg)
+        @test_warn check_warn JuMP.optimize!(model)
+    end
     return
 end
 
