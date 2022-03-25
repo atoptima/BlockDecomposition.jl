@@ -238,7 +238,7 @@ function test_dummy_model_decompositions()
     end
 
     @testset "Decomposition over an array" begin
-        @test_throws ErrorException dummymodel4()
+        @test_throws BlockDecomposition.DecompositionNotOverAxis{UnitRange{Int64}} dummymodel4()
     end
     return
 end

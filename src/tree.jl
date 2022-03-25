@@ -130,24 +130,37 @@ function create_leaf!(n::AbstractNode, id, a::Annotation)
     return
 end
 
-function decompose_leaf(m::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
+function decompose_leaf(m::JuMP.Model, D::Type{<:Decomposition}, axis::Axis)
     set_decomposition_tree!(m, D, axis)     # register the tree in the model
     return gettree(m).root                  # return the root node of the new tree
 end
 
-function decompose_leaf(::JuMP.Model, D::Type{<: Decomposition}, axis)
+"""
+    DecompositionNotOverAxis{T}
+
+Decomposition must be done over an axis.
+Getting started guide available at https://atoptima.github.io/Coluna.jl/stable/start/start/
+
+The container on which you try to decompose is of type `T` and available at `error.container`.
+"""
+struct DecompositionNotOverAxis{T}
+    message::String
+    container::T
+end
+
+function decompose_leaf(::JuMP.Model, D::Type{<:Decomposition}, axis)
     err_msg = """Decomposition must be done over an axis.
     Getting started guide available at https://atoptima.github.io/Coluna.jl/stable/start/start/
     """
-    error(err_msg)
+    throw(DecompositionNotOverAxis(err_msg, axis))
 end
 
-function decompose_leaf(n::AbstractNode, D::Type{<: Decomposition}, axis::Axis)
+function decompose_leaf(n::AbstractNode, D::Type{<:Decomposition}, axis::Axis)
     error("BlockDecomposition does not support nested decomposition yet.")
     return
 end
 
-function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<: Subproblem}, D::Type{<: Decomposition})
+function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<:Subproblem}, D::Type{<:Decomposition})
     tree = gettree(n)
     for a in axis                                       # iterate over AxisIds i.e. subproblems
         create_leaf!(n, a, Annotation(tree, P, D, a))
@@ -155,7 +168,7 @@ function register_subproblems!(n::AbstractNode, axis::Axis, P::Type{<: Subproble
     return
 end
 
-function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, axis::Axis, P::Type{<: Subproblem}, D::Type{<: Decomposition})
+function register_multi_index_subproblems!(n::AbstractNode, multi_index::Tuple, axis::Axis, P::Type{<:Subproblem}, D::Type{<:Decomposition})
     for a in axis
         register_subproblem!(n, (multi_index..., a), P, D, 1, 1)
     end

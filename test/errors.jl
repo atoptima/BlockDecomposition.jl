@@ -3,6 +3,7 @@ function test_errors()
     master_var_in_subproblem2()
     vars_of_same_sp_in_master()
     vars_of_same_sp_in_master2()
+    decomposition_not_on_axis()
 end
 
 function master_var_in_subproblem()
@@ -75,4 +76,11 @@ function vars_of_same_sp_in_master2()
     catch e
         @test e isa NoOptimizer
     end
+end
+
+function decomposition_not_on_axis()
+    model = BlockModel()
+    I = [1,2,3,4,5]
+    @variable(model, x[I])
+    @test_throws BlockDecomposition.DecompositionNotOverAxis{Vector{Int}} @dantzig_wolfe_decomposition(model, dec, I)
 end
