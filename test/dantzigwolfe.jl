@@ -19,10 +19,7 @@ function test_dantzig_wolfe_different()
 
         subproblems = getsubproblems(dec)
         @test repr(subproblems[1]) == "Subproblem formulation for Machines = 1 contains :\t 0.0 <= multiplicity <= 1.0\n"
-
-        tree = gettree(model)
         @test gettree(model) == gettree(dec)
-
         @test repr(dec) == "Root - Annotation(BlockDecomposition.Master, BlockDecomposition.DantzigWolfe, lm = 1.0, um = 1.0, id = 2) with 2 subproblems :\n\t 2 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 4) \n\t 1 => Annotation(BlockDecomposition.DwPricingSp, BlockDecomposition.DantzigWolfe, lm = 0.0, um = 1.0, id = 3) \n"
     end
 
