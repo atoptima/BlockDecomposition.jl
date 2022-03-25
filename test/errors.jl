@@ -53,7 +53,7 @@ function vars_of_same_sp_in_master()
 
     @dantzig_wolfe_decomposition(model, dec, J)
 
-    @test_warn "BlockDecomposition.VarsOfSameDwSpInMaster(c3 : x[2,2] + x[3,2] + x[4,2] ≤ 1.0)" JuMP.optimize!(model)
+    @test_warn repr(BlockDecomposition.VarsOfSameDwSpInMaster(c3)) JuMP.optimize!(model)
     return
 end
 
@@ -69,7 +69,7 @@ function vars_of_same_sp_in_master2()
 
     @dantzig_wolfe_decomposition(model, dec, J)
 
-    @test_warn "BlockDecomposition.VarsOfSameDwSpInMaster(c3[3] : x[2,3] + x[3,3] + x[4,3] ≤ 1.0)" JuMP.optimize!(model)
+    @test_warn repr(BlockDecomposition.VarsOfSameDwSpInMaster(c3[3])) JuMP.optimize!(model)
     return
 end
 
