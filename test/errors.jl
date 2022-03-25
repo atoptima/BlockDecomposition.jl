@@ -3,6 +3,7 @@ function test_errors()
     master_var_in_subproblem2()
     vars_of_same_sp_in_master()
     vars_of_same_sp_in_master2()
+    decomposition_not_on_axis()
 end
 
 function master_var_in_subproblem()
