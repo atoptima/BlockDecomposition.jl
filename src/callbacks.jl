@@ -1,3 +1,5 @@
+struct PricingCallback <: MOI.AbstractCallback end
+
 """
     PricingSolution(cbdata)
 

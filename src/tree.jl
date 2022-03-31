@@ -4,12 +4,14 @@
 abstract type AbstractNode end
 
 mutable struct Tree
+    model::JuMP.Model
     root::AbstractNode
     ann_current_uid::Int
-    function Tree(D::Type{<: Decomposition}, axis::Axis)
+    function Tree(model::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
         t = new()
         t.ann_current_uid = 0
-        r = Root(t, D, axis)                  # initialize root (with node uid 1) calling the extra outer constructor
+        t.model = model
+        r = Root(t, D, axis) # initialize root (with node uid 1) calling the extra outer constructor
         t.root = r
         return t
     end
@@ -81,7 +83,7 @@ has_tree(model::JuMP.Model) = haskey(model.ext, :decomposition_tree)
 
 function set_decomposition_tree!(model::JuMP.Model, D::Type{<: Decomposition}, axis::Axis)
     if !has_tree(model)
-        tree = Tree(D, axis)                      # initialize tree
+        tree = Tree(model, D, axis)                      # initialize tree
         model.ext[:decomposition_tree] = tree     # register tree in JuMP model
         settree!(model, tree)                     # register tree in MOI model?
     else
