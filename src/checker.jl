@@ -1,8 +1,6 @@
 # Errors or warnings
 
 """
-    MasterVarInDwSp
-
 Error thrown when a master variable is in a constraint that belongs to a Dantzig-Wolfe
 subproblem.
 
@@ -18,8 +16,6 @@ struct MasterVarInDwSp
 end
 
 """
-    VarsOfSameDwSpInMaster
-
 Warning when a master constraint involves variables that belong to the same Dantzig-Wolfe
 subproblem. It means you can move the constraint in a subproblem.
 """
