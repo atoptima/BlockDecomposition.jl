@@ -21,7 +21,7 @@ end
     VarsOfSameDwSpInMaster
 
 Warning when a master constraint involves variables that belong to the same Dantzig-Wolfe
-subproblem.
+subproblem. It means you can move the constraint in a subproblem.
 """
 struct VarsOfSameDwSpInMaster
     constraint::JuMP.ConstraintRef
