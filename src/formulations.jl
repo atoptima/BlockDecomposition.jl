@@ -25,6 +25,7 @@ function Base.show(io::IO, m::MasterForm)
 end
 
 struct SubproblemForm{T} <: AbstractForm
+    model::JuMP.Model
     axisname::Symbol
     axisval::T
     annotation::Annotation
@@ -33,7 +34,7 @@ end
 #SubproblemForm(n::Node) = SubproblemForm(n.master) # TODO : nested decomposition
 function SubproblemForm(n::Leaf)
     name = n.parent.axis.name
-    return SubproblemForm(name, n.edge_id, n.problem)
+    return SubproblemForm(n.tree.model, name, n.edge_id, n.problem)
 end
 
 """
@@ -123,6 +124,10 @@ end
 
 function _specify!(sp::SubproblemForm, oracle::Function)
     pushoptimizerbuilder!(sp.annotation, oracle)
+    # The model must know it has a pricing callbacl otherwise it's impossible
+    # to use call the pricing callback when using a caching optimizer.
+    # TODO(guimarqu): we currently pass the optimizer
+    MOI.set(sp.model, PricingCallback(), nothing)
     return
 end
 
