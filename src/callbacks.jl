@@ -107,8 +107,6 @@ function callback_ub(cbdata, x::JuMP.VariableRef)
 end
 
 """
-    AbstractCustomData
-
 Every custom data assigned to a pricing variable or a user cut should inherit from it.
 """
 abstract type AbstractCustomData end
@@ -121,3 +119,29 @@ end
 MathOptInterface.Utilities.map_indices(
     variable_map::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
 ) = x
+
+"""
+A callback to provide initial columns to the optimizer before starting the optimization.
+"""
+struct InitialColumnCallback <: MOI.AbstractCallback end
+
+"""
+    InitialColumn(cbdata)
+
+Solution to a subproblem that is provided to the optimizer ahead of optimization.
+"""
+struct InitialColumn{CbDataType} <: AbstractSubmittable 
+    callback_data::CbDataType
+end
+
+function MOI.submit(
+    model::Model,
+    cb::InitialColumn
+    variables::Vector{JuMP.VariableRef},
+    values::Vector{Float64},
+    custom_data = nothing
+)
+    return MOI.submit(
+        JuMP.backend(model), cb, cost, JuMP.index.(variables), values, custom_data
+    )
+end
