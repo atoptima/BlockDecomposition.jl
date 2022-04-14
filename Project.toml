@@ -1,7 +1,7 @@
 name = "BlockDecomposition"
 uuid = "6cde8614-403a-11e9-12f1-c10d0f0caca0"
 authors = ["Guillaume Marques", "Vitor Nesello", "François Vanderbeck"]
-version = "1.7.0"
+version = "1.8.0"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
