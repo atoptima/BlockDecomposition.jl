@@ -36,6 +36,6 @@ end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::VarBranchingPriority, vi::MOI.VariableIndex)
     varattr = get(dest.varattr, attribute, nothing)
-    varattr === nothing && return 1.0
+    isnothing(varattr) && return 1.0
     return get(varattr, vi, 1.0)
 end

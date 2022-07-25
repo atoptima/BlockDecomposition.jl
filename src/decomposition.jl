@@ -16,6 +16,7 @@ function register_decomposition(model::JuMP.Model)
         for (_, jump_obj) in model.obj_dict
             _annotate_elements!(model, jump_obj, tree)
         end
+        _set_annotations_of_representatives!(model)
         for (_, jump_obj) in model.obj_dict
             _check_annotations(model, jump_obj)
         end
@@ -228,3 +229,33 @@ function setannotations!(
 end
 
 settree!(model::JuMP.Model, tree) = MOI.set(model, DecompositionTree(), tree)
+
+"""
+Error when you try to define a subproblem variable (i.e. that has an AxisId in its indices)
+as a representative of many subproblems.
+
+```julia
+A = @axis(K, [1,2,3])
+@variable(model, x[k in K, e in E]) # cannot be a representative because K is an axis.
+@variable(model, y[e in E]) # can be a representative because no axis in its indices.
+````
+"""
+struct RepresentativeAlreadyInDwSp
+    variable::JuMP.VariableRef
+end
+
+# Subproblem representative variables are assigned to the master by default because
+# they don't have any axis id in its index.
+function _set_annotations_of_representatives!(model::JuMP.Model)
+    vars = MOI.get(JuMP.backend(model), ListOfRepresentatives())
+    isnothing(vars) && return
+
+    for (vi, annotations) in vars
+        cur_annotation = MOI.get(JuMP.backend(model), VariableDecomposition(), vi)
+        if getformulation(cur_annotation) != Master
+            throw(RepresentativeAlreadyInDwSp(JuMP.jump_function(model, vi)))
+        end
+        MOI.set(JuMP.backend(model), VariableDecomposition(), vi, annotations)
+    end 
+    return
+end

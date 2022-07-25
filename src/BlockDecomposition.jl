@@ -16,7 +16,7 @@ const JC = JuMP.Containers
 
 export BlockModel, annotation, specify!, gettree, getmaster, getsubproblems, ×, indice,
        objectiveprimalbound!, objectivedualbound!, branchingpriority!, branchingpriority,
-       customvars!, customconstrs!, customvars, customconstrs
+       customvars!, customconstrs!, customvars, customconstrs, subproblemrepresentative
 export @axis, @dantzig_wolfe_decomposition, @benders_decomposition
 export AutoDwStrategy
 
@@ -24,6 +24,7 @@ include("axis.jl")
 include("annotations.jl")
 include("tree.jl")
 include("formulations.jl")
+include("subproblem_representative.jl")
 include("checker.jl")
 include("decomposition.jl")
 include("objective.jl")

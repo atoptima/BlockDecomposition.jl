@@ -23,6 +23,28 @@ struct VarsOfSameDwSpInMaster
     constraint::JuMP.ConstraintRef
 end
 
+"""
+Error thrown when a variable representative of a set of subproblems is involved in a
+constraint that belongs to a subproblem which is to in the set.
+
+For example, consider a variable `x` representative of subproblems `A` and `B`.
+Assume that a constraint of subproblem `C` involves variable `x`.
+BlockDecomposition with throw `NotRepresentativeOfDwSp` error.
+"""
+struct NotRepresentativeOfDwSp
+    variable::JuMP.VariableRef
+    constraint::JuMP.ConstraintRef
+end
+
+"""
+Error thrown when a Dantzig-Wolfe subproblem variable is involed in another Dantzig-Wolfe
+subproblem.
+"""
+struct DwSpVarNotInGoodDwSp
+    variable::JuMP.VariableRef
+    constraint::JuMP.ConstraintRef
+end
+
 # Methods to check constraints and variables.
 
 function _check_annotations(model::JuMP.Model, container::JC.DenseAxisArray)
@@ -67,7 +89,15 @@ abstract type IndepDecompositionCheck <: DecompositionCheck end
 # with caring about the previous verifications (=> accumulator)
 abstract type AccDecompositionCheck <: DecompositionCheck end
 
-struct MasterVarInDwSpCheck <: IndepDecompositionCheck end
+"""
+Checks:
+- master variable in dantzig-wolfe subproblem
+- dantzig-wolfe variable not in good subproblem
+- representative variable not in good subproblem
+
+"""
+struct VarInDwSpCheck <: IndepDecompositionCheck end
+
 struct VarsOfSameDwSpInMasterCheck <: AccDecompositionCheck end
 
 
@@ -99,18 +129,37 @@ _acc_check_dec_constr(
     ::Annotation{T,F,D}
 ) where {T,F,D} = nothing
 
-function _check_dec_constr(
-    ::MasterVarInDwSpCheck,
-    model::JuMP.Model,
-    var::JuMP.VariableRef,
-    constr::JuMP.ConstraintRef,
-    ::Annotation{T,F,D}
-) where {T,F<:DwPricingSp,D<:DantzigWolfe}
-    if MOI.get(model, VariableDecomposition(), var).formulation == Master
+function _check_varindwsepcheck(annotation::Annotation, var, constr, sp)
+    if getformulation(annotation) == Master
         throw(MasterVarInDwSp(var, constr))
+    elseif annotation.axis_index_value !== sp.axis_index_value
+        throw(DwSpVarNotInGoodDwSp(var, constr))
     end
     return
 end
+
+function _check_varindwsepcheck(annotations::Vector{<:Annotation}, var, constr, sp)
+    axis_index_values = getfield.(annotations, :axis_index_value)
+    if sp.axis_index_value ∉ axis_index_values
+        throw(NotRepresentativeOfDwSp(var, constr))
+    end
+    return
+end
+
+function _check_dec_constr(
+    ::VarInDwSpCheck,
+    model::JuMP.Model,
+    var::JuMP.VariableRef,
+    constr::JuMP.ConstraintRef,
+    sp::Annotation{T,F,D}
+) where {T,F<:DwPricingSp,D<:DantzigWolfe}
+    ann = MOI.get(model, VariableDecomposition(), var)
+    _check_varindwsepcheck(ann, var, constr, sp)
+    return
+end
+
+_isrepresentative(::Annotation) = false
+_isrepresentative(::Vector{<:Annotation}) = true
 
 function _acc_check_dec_constr(
     ::VarsOfSameDwSpInMasterCheck,
@@ -122,7 +171,7 @@ function _acc_check_dec_constr(
     prev_ann = nothing
     annotations = Iterators.map(((var, _),) -> MOI.get(model, VariableDecomposition(), var), func.terms)
     for annotation in annotations
-        if annotation.formulation != DwPricingSp || annotation.upper_multiplicity > 1 ||
+        if _isrepresentative(annotation) || annotation.formulation != DwPricingSp || annotation.upper_multiplicity > 1 ||
             (!isnothing(prev_ann) && getid(prev_ann) != getid(annotation))
             return
         end
@@ -134,7 +183,7 @@ end
 
 function _check_dec_constr(model::JuMP.Model, func::JuMP.AffExpr, constr::JuMP.ConstraintRef, annotation)
     for (var, _) in func.terms
-        _check_dec_constr(MasterVarInDwSpCheck(), model, var, constr, annotation)
+        _check_dec_constr(VarInDwSpCheck(), model, var, constr, annotation)
     end
     _acc_check_dec_constr(VarsOfSameDwSpInMasterCheck(), model, func, constr, annotation)
     return
