@@ -29,8 +29,6 @@ end
 convert(::Type{T}, i::AxisId{Name,T}) where {Name, T} = i.indice
 promote_rule(::Type{T}, ::Type{AxisId{Name,T}}) where {Name,T} = T
 
-Base.getindex(x::JuMP.Containers._AxisLookup{Dict{AxisId{Name,T},N}}, key::T) where {Name,T,N} = x.data[key]
-
 Base.hash(i::AxisId, h::UInt) = hash(i.indice, h)
 
 # Permit the access to the entry of an array using an AxisId.
