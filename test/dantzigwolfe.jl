@@ -237,5 +237,21 @@ function test_dummy_model_decompositions()
     @testset "Decomposition over an array" begin
         @test_throws BlockDecomposition.DecompositionNotOverAxis{UnitRange{Int64}} dummymodel4()
     end
+
+    @testset "Decomposition with representatives" begin
+        d = CvrpToyData()
+        model, x, cov, dummy_sp, mast, sps, dec = cvrp_with_representatives(d)
+        try
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+    
+        x_annotation = BD.annotation(model, x[(1,2)])
+        @test x_annotation == getfield.(sps, :annotation)
+
+        dummy_sp_annotation = BD.annotation(model, dummy_sp[1])
+        test_annotation(dummy_sp_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 10)
+    end
     return
 end

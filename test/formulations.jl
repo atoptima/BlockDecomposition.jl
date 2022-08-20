@@ -235,3 +235,47 @@ function cutting_stock(d::CsData)
     return model, x, y, cov, knp, dec
 end
 
+struct CvrpData
+    vehicle_types
+    E
+    V
+    δ
+    costs
+end
+
+function CvrpToyData()
+    vehicle_types = [1, 2, 3]
+    E = [(1,2), (1,3), (1,4), (1,5), (2,3), (2,4), (2,5), (3,4), (3,5), (4,5)]
+    V = [1,2,3,4,5]
+    δ = Dict(
+        1 => [(1,2), (1,3), (1,4), (1,5)],
+        2 => [(1,2), (2,3), (2,4), (2,5)],
+        3 => [(1,3), (2,3), (3,4), (3,5)],
+        4 => [(1,4), (2,4), (3,4), (4,5)],
+        5 => [(1,5), (2,5), (3,5), (4,5)]
+    )
+    costs = fill(1, length(E))
+    return CvrpData(vehicle_types, E, V, δ, costs)
+end
+
+function cvrp_with_representatives(data::CvrpData)
+    @axis(VehicleTypes, data.vehicle_types)
+    model = BlockModel()
+    @variable(model, 0 <= x[e in data.E] <= 2, Int)
+
+    @constraint(model, cov[v in data.V], sum(x[e] for e in data.δ[v]) >= 2)
+    @constraint(model, dummy_sp[t in VehicleTypes], sum(x[e] for e in data.E) >= 1)
+
+    @objective(model, Min, sum(data.costs[i] * x[e] for (i,e) in enumerate(data.E)))
+
+    @dantzig_wolfe_decomposition(model, dec, VehicleTypes)
+    master = getmaster(dec)
+    subproblems = getsubproblems(dec)
+
+    subproblemrepresentative.(x, Ref(subproblems))
+
+    for v in VehicleTypes
+        specify!(subproblems[v], lower_multiplicity = 0, upper_multiplicity = 10)
+    end
+    return model, x, cov, dummy_sp, master, subproblems, dec
+end
