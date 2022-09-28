@@ -179,6 +179,21 @@ function dummymodel4()
     return model, x, sp, mast, dec
 end
 
+function dummymodel5()
+    model = BD.BlockModel()
+    BD.@axis(A, 1:5)
+    @variable(model, y[1:5] >= 0)
+    @variable(model, z[A, 1:10], Int)
+    @constraint(model, fix[i in 1:5], y[i] == 1)
+    @constraint(model, cov, sum(z[a, i] for a in A, i in 1:10) == 5)
+    @expression(model, knp_lhs[a in A], sum(z[a, i] for i in 1:10))
+    @constraint(model, knp[a in A], knp_lhs[a] <= 3)
+    @expression(model, obj, sum(z[a,i] for i in 1:10, a in A))
+    @objective(model, Min, obj)
+    BD.@dantzig_wolfe_decomposition(model, dec, A)
+    return model, y, z, fix, cov, knp, dec, knp_lhs, obj
+end
+
 function test_dummy_model_decompositions()
     @testset "Model with Arrays" begin
         model, y, z, fix, cov, knp, dec = dummymodel1()
@@ -252,6 +267,23 @@ function test_dummy_model_decompositions()
 
         dummy_sp_annotation = BD.annotation(model, dummy_sp[1])
         test_annotation(dummy_sp_annotation, BD.DwPricingSp, BD.DantzigWolfe, 0, 10)
+    end
+
+    @testset "Decomposition with expression" begin
+        model, y, z, fix, cov, knp, dec = dummymodel5()
+        try 
+            JuMP.optimize!(model)
+        catch e
+            @test e isa NoOptimizer
+        end
+        fix_ann = BD.annotation(model, fix[1])
+        test_annotation(fix_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        y_ann = BD.annotation(model, y[1])
+        test_annotation(y_ann, BD.Master, BD.DantzigWolfe, 1, 1)
+        z_ann = BD.annotation(model, z[1,1])
+        test_annotation(z_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
+        knp_ann = BD.annotation(model, knp[1])
+        test_annotation(knp_ann, BD.DwPricingSp, BD.DantzigWolfe, 1, 1)
     end
     return
 end

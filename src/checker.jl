@@ -78,6 +78,8 @@ function _check_annotations(model::JuMP.Model, container::AbstractArray)
     return
 end
 
+_check_annotations(model::JuMP.Model, container::JuMP.AffExpr) = nothing
+
 # Type of checks
 abstract type DecompositionCheck end
 
