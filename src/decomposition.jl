@@ -121,6 +121,9 @@ function _annotate_elements!(model::JuMP.Model, container::AbstractArray, tree)
     return
 end
 
+_annotate_elements!(model::JuMP.Model, container::JuMP.AffExpr, tree) = nothing
+_annotate_elements!(model::JuMP.Model, container, tree) = nothing
+
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
 struct DecompositionTree <: MOI.AbstractModelAttribute end
@@ -132,6 +135,8 @@ end
 function setannotation!(model, obj::JuMP.VariableRef, a)
     MOI.set(model, VariableDecomposition(), obj, a)
 end
+
+setannotation!(model, obj::JuMP.AffExpr, a) = nothing
 
 function MOI.set(dest::MOIU.UniversalFallback, attribute::ConstraintDecomposition,
         ci::MOI.ConstraintIndex, annotation::Annotation)
