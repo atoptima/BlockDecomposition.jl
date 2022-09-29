@@ -122,6 +122,7 @@ function _annotate_elements!(model::JuMP.Model, container::AbstractArray, tree)
 end
 
 _annotate_elements!(model::JuMP.Model, container::JuMP.AffExpr, tree) = nothing
+_annotate_elements!(model::JuMP.Model, container, tree) = nothing
 
 struct ConstraintDecomposition <: MOI.AbstractConstraintAttribute end
 struct VariableDecomposition <: MOI.AbstractVariableAttribute end
