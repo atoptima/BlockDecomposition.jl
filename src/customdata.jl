@@ -62,3 +62,75 @@ end
 function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomConstrs)
     return get(dest.modattr, attribute, [])
 end
+
+struct CustomVarValue <: MOI.AbstractVariableAttribute end
+struct CustomConstrValue <: MOI.AbstractConstraintAttribute end
+
+"""
+    customdata!(var, custom_data)
+    customdata!(constr, custom_data)
+
+Attach a custom data to a variable or a constraint.
+"""
+customdata!(x::JuMP.VariableRef, custom_data) = MOI.set(
+    x.model, CustomVarValue(), x, custom_data
+)
+customdata!(c::JuMP.ConstraintRef, custom_data) = MOI.set(
+    c.model, CustomConstrValue(), c, custom_data
+)
+
+"""
+    customdata(var)
+    customdata(constr)
+
+Returns the custom data attached to a variable or a constraint; `nothing` if no custom data.
+"""
+customdata(x::JuMP.VariableRef) = MOI.get(x.model, CustomVarValue(), x)
+customdata(c::JuMP.ConstraintRef) = MOI.get(c.model, CustomConstrValue(), c)
+
+
+"""
+Error thrown if you try to attach a custom data type to a variable or a constraint that has
+not been registered with `customvars!` or `customconstrs!`.
+"""
+struct UnregisteredCustomDataFamily
+    name::String
+end
+
+function MOI.set(
+    dest::MOIU.UniversalFallback, attribute::CustomVarValue, vi::MOI.VariableIndex, value::CD
+) where CD
+    if CD ∉ MOI.get(dest, CustomVars())
+        throw(UnregisteredCustomDataFamily(string(CD)))
+    end
+    if !haskey(dest.varattr, attribute)
+        dest.varattr[attribute] = Dict{MOI.VariableIndex, Any}()
+    end
+    dest.varattr[attribute][vi] = value
+    return
+end
+
+function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomVarValue, vi::MOI.VariableIndex)
+    varattr = get(dest.varattr, attribute, nothing)
+    isnothing(varattr) && return nothing
+    return get(varattr, vi, nothing)
+end
+
+function MOI.set(
+    dest::MOIU.UniversalFallback, attribute::CustomConstrValue, ci::MOI.ConstraintIndex, value::CD
+) where CD
+    if CD ∉ MOI.get(dest, CustomConstrs())
+        throw(UnregisteredCustomDataFamily(string(CD)))
+    end
+    if !haskey(dest.conattr, attribute)
+        dest.conattr[attribute] = Dict{MOI.ConstraintIndex, Any}()
+    end
+    dest.conattr[attribute][ci] = value
+    return
+end
+
+function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomConstrValue, ci::MOI.ConstraintIndex)
+    constrattr = get(dest.conattr, attribute, nothing)
+    isnothing(constrattr) && return nothing
+    return get(constrattr, ci, nothing)
+end
