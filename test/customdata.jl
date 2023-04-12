@@ -38,3 +38,25 @@ function test_custom_data()
 
     return
 end
+
+function test_attach_custom_data()
+    model = Model()
+    @variable(model, x[1:2])
+    @constraint(model, con, x[1] + x[2] <= 1)
+
+    @testset "attach custom data to variable from unregistered custom data family" begin
+        @test_throws UnregisteredCustomDataFamily customdata!(x[1], MyCustomVarData1(1))
+    end
+
+    @testset "attach custom data to a variable" begin
+        customvars!(model, MyCustomVarData1)
+        customdata!(x[1], MyCustomVarData1(1))
+        @test customdata(x[1]) == MyCustomVarData1(1)
+    end
+
+    @testset "attach custom data to a constraint" begin
+        customconstrs!(model, MyCustomCutData1)
+        customdata!(con, MyCustomCutData1(1))
+        @test customdata(con) == MyCustomCutData1(1)
+    end
+end
