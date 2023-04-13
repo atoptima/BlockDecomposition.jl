@@ -44,20 +44,26 @@ customconstrs(model) = MOI.get(model, CustomConstrs())
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomVars, value
 )
+    if !haskey(dest.modattr, attribute)
+        dest.modattr[attribute] = []
+    end
     for elem in value
         @assert elem <: AbstractCustomData
+        push!(dest.modattr[attribute], elem)
     end
-    dest.modattr[attribute] = value
     return
 end
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomConstrs, value
 )
+    if !haskey(dest.modattr, attribute)
+        dest.modattr[attribute] = []
+    end
     for elem in value
         @assert elem <: AbstractCustomData
+        push!(dest.modattr[attribute], elem)
     end
-    dest.modattr[attribute] = value
     return
 end
 
