@@ -26,6 +26,7 @@ function test_custom_data()
         @test customconstrs(model)[2] == MyCustomCutData2
     end
 
+    model = Model()
     customvars!(model, MyCustomVarData2)
     customconstrs!(model, MyCustomCutData2)
 
@@ -34,6 +35,19 @@ function test_custom_data()
         @test customvars(model)[1] == MyCustomVarData2
         @test length(customconstrs(model)) == 1
         @test customconstrs(model)[1] == MyCustomCutData2
+    end
+
+    model = Model()
+    customvars!(model, MyCustomVarData1)
+    customvars!(model, MyCustomVarData2)
+    customconstrs!(model, MyCustomCutData1)
+    customconstrs!(model, MyCustomCutData2)
+
+    @testset "Successive declaration of custom data" begin
+        @test customvars(model)[1] == MyCustomVarData1
+        @test customvars(model)[2] == MyCustomVarData2
+        @test customconstrs(model)[1] == MyCustomCutData1
+        @test customconstrs(model)[2] == MyCustomCutData2
     end
 
     return

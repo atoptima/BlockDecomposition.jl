@@ -2,8 +2,8 @@ struct CustomVars <: MOI.AbstractModelAttribute end
 struct CustomConstrs <: MOI.AbstractModelAttribute end
 
 """
-    customvars!(model, customvar::DataType)
-    customvars!(model, customvars::Vector{DataType})
+    customvars!(model, customvar::Type{AbstractCustomData})
+    customvars!(model, customvars::Vector{Type{<:AbstractCustomData}})
 
 Set the possible custom data types of variables in a model.
 """
@@ -44,14 +44,26 @@ customconstrs(model) = MOI.get(model, CustomConstrs())
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomVars, value
 )
-    dest.modattr[attribute] = value
+    if !haskey(dest.modattr, attribute)
+        dest.modattr[attribute] = []
+    end
+    for elem in value
+        @assert elem <: AbstractCustomData
+        push!(dest.modattr[attribute], elem)
+    end
     return
 end
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomConstrs, value
 )
-    dest.modattr[attribute] = value
+    if !haskey(dest.modattr, attribute)
+        dest.modattr[attribute] = []
+    end
+    for elem in value
+        @assert elem <: AbstractCustomData
+        push!(dest.modattr[attribute], elem)
+    end
     return
 end
 
@@ -99,7 +111,7 @@ end
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomVarValue, vi::MOI.VariableIndex, value::CD
-) where CD
+) where CD <: AbstractCustomData
     if CD ∉ MOI.get(dest, CustomVars())
         throw(UnregisteredCustomDataFamily(string(CD)))
     end
@@ -118,7 +130,7 @@ end
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomConstrValue, ci::MOI.ConstraintIndex, value::CD
-) where CD
+) where CD <: AbstractCustomData
     if CD ∉ MOI.get(dest, CustomConstrs())
         throw(UnregisteredCustomDataFamily(string(CD)))
     end
@@ -134,3 +146,7 @@ function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomConstrValue, ci:
     isnothing(constrattr) && return nothing
     return get(constrattr, ci, nothing)
 end
+
+MathOptInterface.Utilities.map_indices(
+    variable_map::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
+) = x
