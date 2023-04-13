@@ -32,6 +32,21 @@ function axis_declarations()
         @test indice(C[end]) == (4,1)
     end
 
+
+    # Checkbounds
+    @axis(H, [1, 2, 3, 4, 5])
+    @testset "Checkbounds axis" begin
+        z = [1, 2, 3, 4]
+        @test z[H[1]] == 1
+        @test z[H[2]] == 2
+        @test z[H[3]] == 3
+        @test z[H[4]] == 4
+        @test_throws BoundsError z[H[5]] == 5
+
+        @test isnothing(checkbounds(z, H[4]))
+        @test_throws BoundsError checkbounds(z, H[5])
+    end
+
     # Cartesian product
     E = 1:3
     F = ['a', 'b', 'c']
