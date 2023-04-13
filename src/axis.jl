@@ -23,6 +23,8 @@ function indice(i::AxisId{Name,T})::T where {Name,T}
     return i.indice
 end
 
+Base.checkindex(::Type{Bool}, inds::AbstractUnitRange, i::AxisId) = checkindex(Bool, inds, indice(i))
+
 # Allow conversion any instance of AxisId{Name, T} to an instance of T.
 # Note that this conversion leads to a loose of information (Name).
 # Conversion in the other way around is not possible.
