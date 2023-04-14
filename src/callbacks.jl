@@ -119,10 +119,6 @@ function MOI.submit(
     return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
 end
 
-MathOptInterface.Utilities.map_indices(
-    variable_map::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
-) = x
-
 """
 A callback to provide initial columns to the optimizer before starting the optimization.
 """
