@@ -45,10 +45,9 @@ function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomVars, value
 )
     if !haskey(dest.modattr, attribute)
-        dest.modattr[attribute] = []
+        dest.modattr[attribute] = Type{<:AbstractCustomData}[]
     end
     for elem in value
-        @assert elem <: AbstractCustomData
         push!(dest.modattr[attribute], elem)
     end
     return
@@ -58,21 +57,20 @@ function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomConstrs, value
 )
     if !haskey(dest.modattr, attribute)
-        dest.modattr[attribute] = []
+        dest.modattr[attribute] = Type{<:AbstractCustomData}[]
     end
     for elem in value
-        @assert elem <: AbstractCustomData
         push!(dest.modattr[attribute], elem)
     end
     return
 end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomVars)
-    return get(dest.modattr, attribute, [])
+    return get(dest.modattr, attribute, Type{<:AbstractCustomData}[])
 end
 
 function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomConstrs)
-    return get(dest.modattr, attribute, [])
+    return get(dest.modattr, attribute, Type{<:AbstractCustomData}[])
 end
 
 struct CustomVarValue <: MOI.AbstractVariableAttribute end
@@ -149,4 +147,7 @@ end
 
 MathOptInterface.Utilities.map_indices(
     variable_map::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
+) = x
+MathOptInterface.Utilities.map_indices(
+    variable_map::MathOptInterface.Utilities.IndexMap, x::Vector{AbstractCustomData}
 ) = x
