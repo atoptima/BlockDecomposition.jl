@@ -22,6 +22,9 @@ function test_sol_disagg()
             "value(::ColumnInfo) not defined."
         ) BlockDecomposition.value(ColumnInfo())
         @test_throws ErrorException(
+            "customdata(::ColumnInfo) not defined."
+        ) BlockDecomposition.customdata(ColumnInfo())
+        @test_throws ErrorException(
             "value(::ColumnInfo, ::MOI.VariableIndex) not defined."
         ) BlockDecomposition.value(ColumnInfo(), x)
     end

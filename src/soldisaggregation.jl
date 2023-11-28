@@ -29,3 +29,10 @@ value(info::AbstractColumnInfo, x::JuMP.VariableRef) = value(info, x.index)
 value(info::AbstractColumnInfo, ::MOI.VariableIndex) = error(
     "value(::$(typeof(info)), ::MOI.VariableIndex) not defined."
 )
+
+"""
+    customdata(info)
+
+Returns the custom data attached to the master column variable associated to `info`.
+"""
+customdata(info::AbstractColumnInfo) = error("customdata(::$(typeof(info))) not defined.")
