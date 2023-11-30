@@ -109,12 +109,12 @@ end
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomVarValue, vi::MOI.VariableIndex, value::CD
-) where CD <: AbstractCustomData
+) where {CD<:AbstractCustomData}
     if CD ∉ MOI.get(dest, CustomVars())
         throw(UnregisteredCustomDataFamily(string(CD)))
     end
     if !haskey(dest.varattr, attribute)
-        dest.varattr[attribute] = Dict{MOI.VariableIndex, Any}()
+        dest.varattr[attribute] = Dict{MOI.VariableIndex,Any}()
     end
     dest.varattr[attribute][vi] = value
     return
@@ -128,12 +128,12 @@ end
 
 function MOI.set(
     dest::MOIU.UniversalFallback, attribute::CustomConstrValue, ci::MOI.ConstraintIndex, value::CD
-) where CD <: AbstractCustomData
+) where {CD<:AbstractCustomData}
     if CD ∉ MOI.get(dest, CustomConstrs())
         throw(UnregisteredCustomDataFamily(string(CD)))
     end
     if !haskey(dest.conattr, attribute)
-        dest.conattr[attribute] = Dict{MOI.ConstraintIndex, Any}()
+        dest.conattr[attribute] = Dict{MOI.ConstraintIndex,Any}()
     end
     dest.conattr[attribute][ci] = value
     return
@@ -151,3 +151,7 @@ MathOptInterface.Utilities.map_indices(
 MathOptInterface.Utilities.map_indices(
     variable_map::MathOptInterface.Utilities.IndexMap, x::Vector{AbstractCustomData}
 ) = x
+
+# added for compatibility with MathOptInterface v1.23
+MathOptInterface.Utilities.map_indices(f::Function, x::AbstractCustomData) = x
+MathOptInterface.Utilities.map_indices(f::Function, x::Vector{AbstractCustomData}) = x
