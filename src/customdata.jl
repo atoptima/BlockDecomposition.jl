@@ -1,13 +1,60 @@
+"""
+    AbstractCustomData
+
+Left for compatibility with BlockDecomposition versions 1.14.1 and below.
+One should use [AbstractCustomVarData](@ref) or [AbstractCustomConstrData](@ref) instead.
+"""
+abstract type AbstractCustomData end
+
+"""
+    AbstractCustomVarData
+
+Every custom data associated to a solution passed in [PricingSolution](@ref) 
+should inherit from AbstractCustomVarData.
+
+This data is used to 
+- Determine the coefficient of the corresponding column in non-robust constraints
+- Store the information about pricing solution not expressed with subproblem variables
+  (and thus not used in the master formulation); this information can then be retrieved 
+  using [customdata(info)]@ref by the user.
+- determine the branching priority of the corresponding column 
+  (if [branchingpriority(::AbstractCustomVarData)] is defined for the concrete type).
+"""
+abstract type AbstractCustomVarData <: AbstractCustomData end
+
+branchingpriority(::Nothing) = nothing
+
+"""
+    branchingpriority(<:AbstractCustomVarData)
+
+This function should be redefined for a concrete type which inherits from AbstractCustomVarData
+if a custom branching priority is defined for columns associated with this data type.
+If this function is not redefined, the branching priority of each column equals to the 
+branching priority of the pricing problem which generated it. 
+"""
+branchingpriority(::AbstractCustomVarData) = nothing
+
+
+"""
+    AbstractCustomConstrData
+
+Every custom data associated to a non-robust constraint should inherit from AbstractCustomConstrData.
+
+This data is used to determine the coefficient of the columns in non-robust constraints.
+"""
+abstract type AbstractCustomConstrData <: AbstractCustomData end
+
+
 struct CustomVars <: MOI.AbstractModelAttribute end
 struct CustomConstrs <: MOI.AbstractModelAttribute end
 
 """
-    customvars!(model, customvar::Type{AbstractCustomData})
-    customvars!(model, customvars::Vector{Type{<:AbstractCustomData}})
+    customvars!(model, customvar::Type{<:AbstractCustomVarData})
+    customvars!(model, customvars::Vector{Type{<:AbstractCustomVarData}})
 
 Set the possible custom data types of variables in a model.
 """
-customvars!(model, customvar::DataType) = MOI.set(
+customvars!(model, customvar::Type{<:AbstractCustomData}) = MOI.set(
     model, CustomVars(), [customvar]
 )
 customvars!(model, customvars::Vector{DataType}) = MOI.set(
@@ -15,12 +62,12 @@ customvars!(model, customvars::Vector{DataType}) = MOI.set(
 )
 
 """
-    customconstrs!(model, customconstr::DataType)
-    customconstrs!(model, customconstrs::Vector{DataType})
+    customconstrs!(model, customconstr::Type{AbstractCustomConstrData})
+    customconstrs!(model, customconstrs::Vector{Type{AbstractCustomConstrData}})
 
 Set the possible custom data types of constraints in a model.
 """
-customconstrs!(model, customconstr::DataType) = MOI.set(
+customconstrs!(model, customconstr::Type{<:AbstractCustomData}) = MOI.set(
     model, CustomConstrs(), [customconstr]
 )
 customconstrs!(model, customconstrs::Vector{DataType}) = MOI.set(
@@ -146,12 +193,12 @@ function MOI.get(dest::MOIU.UniversalFallback, attribute::CustomConstrValue, ci:
 end
 
 MathOptInterface.Utilities.map_indices(
-    variable_map::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
+    ::MathOptInterface.Utilities.IndexMap, x::AbstractCustomData
 ) = x
 MathOptInterface.Utilities.map_indices(
-    variable_map::MathOptInterface.Utilities.IndexMap, x::Vector{AbstractCustomData}
+    ::MathOptInterface.Utilities.IndexMap, x::Vector{AbstractCustomData}
 ) = x
 
 # added for compatibility with MathOptInterface v1.23
-MathOptInterface.Utilities.map_indices(f::Function, x::AbstractCustomData) = x
-MathOptInterface.Utilities.map_indices(f::Function, x::Vector{AbstractCustomData}) = x
+MathOptInterface.Utilities.map_indices(::Function, x::AbstractCustomData) = x
+MathOptInterface.Utilities.map_indices(::Function, x::Vector{AbstractCustomData}) = x

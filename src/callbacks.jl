@@ -109,17 +109,6 @@ function callback_ub(cbdata, x::JuMP.VariableRef)
 end
 
 """
-Every custom data assigned to a pricing variable or a user cut should inherit from it.
-"""
-abstract type AbstractCustomData end
-
-function MOI.submit(
-    model, cb, con, custom_data
-)
-    return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
-end
-
-"""
 A callback to provide initial columns to the optimizer before starting the optimization.
 """
 struct InitialColumnsCallback <: MOI.AbstractCallback end

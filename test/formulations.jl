@@ -27,9 +27,10 @@ function generalized_assignement(d::GapData)
          sum(d.costs[j, m] * x[j, m] for j in d.jobs, m in Machines))
 
     @dantzig_wolfe_decomposition(model, decomposition, Machines)
-    master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
-    specify!.(subproblems, lower_multiplicity = 0, upper_multiplicity = 1)
+    for (i,_) in enumerate(Machines)
+        specify!(subproblems[i], lower_multiplicity = 0, upper_multiplicity = 1, branching_priority = i)
+    end
     return model, x, cov, knp, decomposition
 end
 
@@ -67,9 +68,8 @@ function generalized_assignement_penalties(d::GapData)
 
     @dantzig_wolfe_decomposition(model, decomposition, Machines)
 
-    master = getmaster(decomposition)
     subproblems = getsubproblems(decomposition)
-    for (i,m) in enumerate(Machines)
+    for (i,_) in enumerate(Machines)
         specify!(subproblems[i], lower_multiplicity = 0, upper_multiplicity = 1)
     end
     return model, x, y, z, cov, knp, lim, decomposition

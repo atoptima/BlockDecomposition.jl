@@ -29,11 +29,11 @@ include("subproblem_representative.jl")
 include("checker.jl")
 include("decomposition.jl")
 include("objective.jl")
+include("customdata.jl")
 include("callbacks.jl")
 include("automatic_dantzig_wolfe.jl")
 include("utils.jl")
 include("branchingpriority.jl")
-include("customdata.jl")
 include("soldisaggregation.jl")
 
 function model_factory(::Val{true}, optimizer; kw...)::JuMP.Model
