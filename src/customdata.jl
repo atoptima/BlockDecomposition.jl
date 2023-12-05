@@ -6,6 +6,12 @@ One should use [AbstractCustomVarData](@ref) or [AbstractCustomConstrData](@ref)
 """
 abstract type AbstractCustomData end
 
+function MOI.submit(
+    model, cb, con, custom_data
+)
+    return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
+end
+
 """
     AbstractCustomVarData
 
