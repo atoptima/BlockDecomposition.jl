@@ -12,13 +12,14 @@ MOI.optimize!(::MockOptimizer) = nothing
 
 # Helper to tests annotations
 function test_annotation(ann::BD.Annotation, F::Type{<:BD.Formulation}, 
-        D::Type{<:BD.Decomposition}, minmult, maxmult)
+        D::Type{<:BD.Decomposition}, minmult, maxmult, branchpr = 1.0)
     @test BD.getformulation(ann) == F
     @test BD.getdecomposition(ann) == D
     @test BD.getlowermultiplicity(ann) == minmult
     @test BD.getuppermultiplicity(ann) == maxmult
+    @test BD.getbranchingpriority(ann) == branchpr
     id = BD.getid(ann)
-    @test repr(ann) == "Annotation($(F), $(D), lm = $(float(minmult)), um = $(float(maxmult)), id = $(id))"
+    @test repr(ann) == "Annotation($(F), $(D), lm = $(float(minmult)), um = $(float(maxmult)), bp = $(float(branchpr)), id = $(id))"
     return
 end
 
