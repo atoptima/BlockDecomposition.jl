@@ -6,12 +6,6 @@ One should use [AbstractCustomVarData](@ref) or [AbstractCustomConstrData](@ref)
 """
 abstract type AbstractCustomData end
 
-function MOI.submit(
-    model, cb, con, custom_data
-)
-    return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
-end
-
 """
     AbstractCustomVarData
 
@@ -50,6 +44,11 @@ This data is used to determine the coefficient of the columns in non-robust cons
 """
 abstract type AbstractCustomConstrData <: AbstractCustomData end
 
+function MOI.submit(
+    model, cb, con::JuMP.AbstractConstraint, custom_data::AbstractCustomConstrData
+)
+    return MOI.submit(JuMP.backend(model), cb, JuMP.moi_function(con.func), con.set, custom_data)
+end
 
 struct CustomVars <: MOI.AbstractModelAttribute end
 struct CustomConstrs <: MOI.AbstractModelAttribute end

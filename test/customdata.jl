@@ -17,6 +17,18 @@ struct MyCustomCutData2 <: BlockDecomposition.AbstractCustomConstrData
     min_items::Float64
 end
 
+struct CutCallbackContext end
+
+function MOI.submit(
+    ::MockOptimizer, 
+    ::MOI.UserCut{CutCallbackContext},
+    ::MOI.ScalarAffineFunction{Float64},
+    ::Union{MOI.LessThan{Float64}, MOI.GreaterThan{Float64}, MOI.EqualTo{Float64}},
+    ::BD.AbstractCustomConstrData
+)
+    return nothing
+end
+
 function test_custom_data()
     model = Model()
     customvars!(model, [MyCustomVarData1, MyCustomVarData2])
@@ -56,13 +68,16 @@ function test_custom_data()
     return
 end
 
+
+
 function test_attach_custom_data()
-    model = Model()
+    model = Model(MockOptimizer)
     @variable(model, x[1:2])
     @constraint(model, con, x[1] + x[2] <= 1)
 
     @testset "attach custom data to variable from unregistered custom data family" begin
         @test_throws UnregisteredCustomDataFamily customdata!(x[1], MyCustomVarData1(1, 2.0))
+        @test_throws UnregisteredCustomDataFamily customdata!(con, MyCustomCutData1(1))
     end
 
     @testset "attach custom data to a variable" begin
@@ -80,5 +95,13 @@ function test_attach_custom_data()
         customconstrs!(model, MyCustomCutData1)
         customdata!(con, MyCustomCutData1(1))
         @test customdata(con) == MyCustomCutData1(1)
+    end
+
+    @testset "submit a cut with attached custom data " begin
+        MOI.submit(
+            model, MOI.UserCut(CutCallbackContext()),
+            JuMP.ScalarConstraint(JuMP.AffExpr(0.0), MOI.LessThan(1.0)), MyCustomCutData1(2)
+        )
+        @test_throws UnregisteredCustomDataFamily JuMP.optimize!(model)
     end
 end
