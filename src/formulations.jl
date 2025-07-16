@@ -130,12 +130,25 @@ function _specify!(sp::SubproblemForm, solver::Union{MOI.OptimizerWithAttributes
     return
 end
 
+"""
+    AnnotationCallback
+
+A [`PricingCallback`](@ref) for which the oracle is registered through the annotations.
+"""
+struct AnnotationCallback end
+
+MOI.Utilities.map_indices(::F, x::AnnotationCallback) where {F<:Function} = x
+
 function _specify!(sp::SubproblemForm, oracle::Function)
     pushoptimizerbuilder!(sp.annotation, oracle)
-    # The model must know it has a pricing callbacl otherwise it's impossible
-    # to use call the pricing callback when using a caching optimizer.
+    # The model must know it has a pricing callback otherwise it's impossible
+    # to use call the pricing callback when using a caching optimizer because
+    # it will not have the `index_map` during the callback. See
+    # https://github.com/jump-dev/MathOptInterface.jl/blob/d66c13dab9cbd76c3451faffafd7d828a4e04ee1/src/Utilities/cachingoptimizer.jl#L358-L369
     # TODO(guimarqu): we currently pass the optimizer
-    MOI.set(sp.model, PricingCallback(), nothing)
+    # We cannot pass `nothing` as MOI interprets `nothing` as unsetting the value of an attribute.
+    # so we pass a custom value.
+    MOI.set(sp.model, PricingCallback(), AnnotationCallback())
     return
 end
 
